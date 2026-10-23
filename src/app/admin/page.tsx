@@ -36,10 +36,10 @@ export default function AdminPage() {
   const [content, setContent] = useState<ContentState>(() =>
     loadFromStorage("portfolio_admin_content", defaultContent) as ContentState
   );
-  const [projects, setProjects] = useState<Array<Record<string, unknown>>>(() =>
+  const [projects] = useState<Array<Record<string, unknown>>>(() =>
     loadFromStorage("portfolio_admin_projects", []) as Array<Record<string, unknown>>
   );
-  const [assets, setAssets] = useState<Record<string, string>>(() =>
+  const [assets] = useState<Record<string, string>>(() =>
     loadFromStorage("portfolio_admin_assets", {}) as Record<string, string>
   );
 
