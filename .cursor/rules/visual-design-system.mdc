@@ -1,0 +1,85 @@
+---
+description: Light-first visual system, semantic color tokens, typography, spacing, radii, and component rules.
+alwaysApply: true
+---
+
+# Visual Design System
+
+## Direction
+
+"Editorial Signal": warm porcelain light surfaces, near-black ink, one cobalt action color, fine hairlines, and a restrained sky-blue glow. Premium through hierarchy and craft, not decoration. Dark mode is optional and inherits the existing dark brand palette.
+
+## Semantic tokens (light, default)
+
+| Token | Value | Notes |
+|---|---|---|
+| `--background` | `#F7F6F2` | warm porcelain |
+| `--surface` | `#FFFFFF` | cards, sheets |
+| `--surface-muted` | `#EFEEE9` | quiet bands |
+| `--foreground` | `#0A0A0B` | 18.3:1 on background |
+| `--muted-foreground` | `#52525B` | 7.15:1 on background |
+| `--subtle-foreground` | `#71717A` | 4.47:1 - large/decorative only, never body |
+| `--accent` | `#1D4ED8` | 6.70:1 with white |
+| `--accent-soft` | `#E8EEFF` | accent tint surface |
+| `--sky` | `#38BDF8` | decorative glow only |
+| `--success` | `#047857` | 5.07:1 on background |
+| `--border` | `rgba(10,10,11,0.10)` | hairlines |
+| `--border-strong` | `rgba(10,10,11,0.20)` | hover/active |
+| `--ring` | `#1D4ED8` | focus ring |
+
+Dark mode tokens are opt-in and may reuse the data file: `#09090B` background, `#121215` surface, `#FAFAFA` text, `#A1A1AA` secondary, `#38BDF8` accent.
+
+Never use raw hex values in components. Map tokens through Tailwind `@theme` and semantic utilities (`bg-background`, `text-muted-foreground`, `border-border`, `ring-ring`).
+
+## Typography
+
+- Display: Outfit (`--font-outfit`), 500-700 weights.
+- Body: Inter (`--font-inter`), 400-500.
+- Metadata/code: JetBrains Mono (`--font-jetbrains`), 400-500, uppercase labels sparingly.
+- Scale: 12, 14, 16, 18, 22, 28, 36, 48, 64, 88px via `clamp()`.
+- Body line-height 1.6; display 0.95-1.05; max measure 68ch.
+- Avoid weights below 400. Do not use more than three families.
+- Use `text-wrap: balance` on headings and `pretty` on short paragraphs.
+
+## Space, shape, depth
+
+- 4px base grid; component padding 12/16/24; section rhythm 64/96/128.
+- Radii: 8, 12, 16, 24, pill. One card radius (20-24px), one control radius (12-14px).
+- Borders: 1px hairline, not heavy shadows.
+- Shadow: one soft ambient shadow for floating UI only.
+- Glass: only sticky nav, sheets, and the 3D fallback frame. Never glass every card.
+- Optional 2-3% grain overlay on large hero/section backgrounds; no noisy textures behind text.
+
+## Components
+
+- Buttons: 48px min height, 12px horizontal padding minimum, clear primary/secondary/ghost hierarchy, visible pressed state.
+- Focus: 2px ring, 2px offset, never removed.
+- Status: use text plus icon/color, not color alone.
+- Project cards: editorial, one idea per card, index number, category, status, metric, clear title, one primary action.
+- Avoid badge soup. Maximum three metadata chips per card.
+- Icons: consistent stroke width and size; decorative icons `aria-hidden`.
+
+## Anti-patterns
+
+- Neon gradients, cyberpunk glows, pure black backgrounds in light mode.
+- Glassmorphism on content cards.
+- Random accent colors per section.
+- Arbitrary `mt-[13px]`, `text-[#...]`, or one-off radii.
+- Low-contrast grey body text (`#71717A` at 14px).
+- Multiple competing display fonts.
+- Decorative 3D or animation with no narrative role.
+
+## Verification
+
+- Contrast check for every text/background pair (4.5:1 body, 3:1 large/UI).
+- Search the codebase for raw hex/rgb values outside the token file.
+- Screenshot review at 375, 768, 1280, 1440.
+- Confirm the design still reads without color (grayscale test).
+
+## Official references
+
+- https://tailwindcss.com/docs/theme
+- https://ui.shadcn.com/docs/theming
+- https://developer.apple.com/design/human-interface-guidelines/typography
+- https://developer.apple.com/design/human-interface-guidelines/color
+- https://developer.apple.com/design/human-interface-guidelines/materials

@@ -1,0 +1,75 @@
+---
+description: Mobile-first responsive layout, breakpoint, overflow, touch-target, and reflow rules for the portfolio.
+globs: src/**/*.tsx, src/**/*.ts, src/**/*.css, app/**/*.tsx, app/**/*.css
+alwaysApply: false
+---
+
+# Responsive Design Rules
+
+## Non-negotiables
+
+- Design the 320px layout first, then enhance at larger widths. Never treat `sm:` as "mobile".
+- No horizontal overflow on `body` or any non-scroller container at any tested width.
+- Minimum interactive target: 44x44 CSS px. Preferred control height: 48px (SOP is stricter than HIG).
+- Minimum body text: 16px. Never use light/thin weights below 18px.
+- Use `rem`, `clamp()`, `dvh`, and safe-area insets; avoid fixed pixel heights for text containers.
+- Keep all essential content available at 200% zoom and 320px reflow.
+- Intentional horizontal scrolling is allowed only inside the projects rail, with visible controls and an accessible fallback.
+
+## Breakpoints
+
+Use Tailwind defaults unless a proven need exists:
+
+| Token | Min width | Primary use |
+|---|---:|---|
+| base | 0 | phone, single column |
+| `sm` | 40rem / 640px | large phone, 2-up chips |
+| `md` | 48rem / 768px | tablet, 2-column sections |
+| `lg` | 64rem / 1024px | laptop, editorial split |
+| `xl` | 80rem / 1280px | wide desktop |
+| `2xl` | 96rem / 1536px | max-width polish only |
+
+Test at 320, 375, 390, 768, 1024, 1280, 1440, and 1920px wide; plus 844x390 landscape.
+
+## Layout patterns
+
+- Page shell: `mx-auto w-full max-w-[80rem] px-5 sm:px-8 lg:px-12`.
+- Use CSS Grid/Flexbox, not absolute positioning, for primary layout.
+- Use container queries for project cards so cards adapt to the rail, not only the viewport.
+- Use `min-h-dvh` rather than `h-screen`; respect `env(safe-area-inset-*)` for floating mobile UI.
+- Give sticky-header anchors `scroll-margin-top`.
+- Long emails, URLs, and stack names must wrap: `overflow-wrap: anywhere`.
+- Prefer `aspect-ratio` and intrinsic sizing over hard-coded media dimensions.
+
+## Navigation and carousel
+
+- Mobile nav must be a 48px trigger plus an accessible modal sheet/dialog; trap focus, close on Escape, restore focus, lock background scroll.
+- Desktop nav must remain keyboard reachable and show a visible focus ring.
+- Carousel: native horizontal scroll with `scroll-snap-type: x mandatory`, `overscroll-behavior-x: contain`, and `touch-action: pan-x`.
+- Show one card plus a peek on phones, two plus peek on tablets, and 2.5-3 on desktop.
+- Do not hide offscreen slides with `display: none`; keyboard focus must be able to reach every project.
+- Provide Prev/Next buttons, index status, and arrow/Home/End key support.
+
+## Anti-patterns
+
+- `h-screen` on mobile browsers with dynamic chrome.
+- Fixed heights around headings or cards containing text.
+- `overflow-x: hidden` used to mask a layout bug.
+- Tiny icon-only controls without a 44px hit area.
+- Hover-only affordances or swipe-only interactions.
+- Full-page scroll hijacking or snap on the document body.
+
+## Verification
+
+- Playwright viewport matrix for overflow, clipping, focus order, and touch targets.
+- Check `document.documentElement.scrollWidth <= window.innerWidth` on every route.
+- Keyboard-only pass at mobile and desktop widths.
+- 200% browser zoom and 320px reflow pass.
+
+## Official references
+
+- https://tailwindcss.com/docs/responsive-design
+- https://tailwindcss.com/docs/container-queries
+- https://developer.apple.com/design/human-interface-guidelines/layout
+- https://developer.apple.com/design/human-interface-guidelines/accessibility
+- https://www.w3.org/WAI/WCAG22/Understanding/reflow.html

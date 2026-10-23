@@ -1,0 +1,77 @@
+@layer components {
+  .site-footer {
+    border-top: 1px solid var(--line);
+    padding-block: 1.5rem 2rem;
+  }
+
+  .footer-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem 2rem;
+  }
+
+  .footer-copy {
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+
+  .footer-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.2rem;
+  }
+
+  .footer-nav a {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    color: var(--ink-soft);
+    font-size: 0.78rem;
+    text-decoration: none;
+  }
+
+  .footer-nav a:hover {
+    color: var(--accent);
+  }
+
+  .page-hero {
+    position: relative;
+    border-bottom: 1px solid var(--line);
+    padding-block: clamp(4.5rem, 9vw, 8rem) clamp(3.5rem, 6vw, 5.5rem);
+  }
+
+  .page-hero .display-title {
+    max-width: 13ch;
+    margin-top: 1.5rem;
+  }
+
+  .page-hero__sub {
+    display: grid;
+    max-width: 39rem;
+    gap: 1rem;
+    margin-top: 1.8rem;
+    color: var(--ink-soft);
+    font-size: clamp(1rem, 1.4vw, 1.16rem);
+    line-height: 1.7;
+  }
+
+  .page-hero__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: 1.8rem;
+  }
+
+  .role-pill {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.42rem 0.7rem;
+    color: var(--ink-soft);
+    font-family: var(--font-jetbrains), ui-monospace, monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+}

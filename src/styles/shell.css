@@ -1,0 +1,63 @@
+@layer components {
+  .marquee {
+    overflow: hidden;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper-deep);
+    padding-block: 0.9rem;
+  }
+
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    align-items: center;
+    gap: 1.5rem;
+    animation: marquee 36s linear infinite;
+  }
+
+  .marquee:hover .marquee-track {
+    animation-play-state: paused;
+  }
+
+  .marquee-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 1.5rem;
+    color: var(--ink-soft);
+    font-family: var(--font-jetbrains), ui-monospace, monospace;
+    font-size: 0.66rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .marquee-star {
+    color: var(--accent);
+    font-size: 0.8rem;
+  }
+
+  .section-head {
+    display: grid;
+    gap: 1.5rem;
+    margin-bottom: clamp(2.5rem, 5vw, 4.5rem);
+  }
+
+  .section-head__copy {
+    display: grid;
+    max-width: 52rem;
+    gap: 1.1rem;
+  }
+
+  .section-head__side {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .count-note {
+    color: var(--muted);
+    font-family: var(--font-jetbrains), ui-monospace, monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+}

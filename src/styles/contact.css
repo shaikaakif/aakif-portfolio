@@ -1,0 +1,274 @@
+@layer components {
+  .contact-panel {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-xl);
+    background: var(--ink);
+    padding: clamp(2rem, 6vw, 5rem);
+    color: var(--paper-soft);
+  }
+
+  .contact-panel::before {
+    position: absolute;
+    top: -36%;
+    right: -15%;
+    width: 40rem;
+    height: 40rem;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(194, 71, 42, 0.38), transparent 65%);
+    content: "";
+    pointer-events: none;
+  }
+
+  .contact-panel::after {
+    position: absolute;
+    right: 8%;
+    bottom: -40%;
+    width: 30rem;
+    height: 30rem;
+    border: 1px solid rgba(244, 240, 232, 0.12);
+    border-radius: 50%;
+    content: "";
+    pointer-events: none;
+  }
+
+  .contact-inner {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 2.5rem;
+  }
+
+  .contact-panel .eyebrow {
+    color: rgba(244, 240, 232, 0.58);
+  }
+
+  .contact-panel .eyebrow::before {
+    background: rgba(244, 240, 232, 0.3);
+  }
+
+  .contact-title {
+    max-width: 15ch;
+    font-size: clamp(2.7rem, 6vw, 5.8rem);
+    line-height: 0.94;
+  }
+
+  .contact-title em {
+    color: var(--accent);
+    font-style: normal;
+  }
+
+  .contact-sub {
+    max-width: 34rem;
+    margin-top: 1.2rem;
+    color: rgba(244, 240, 232, 0.68);
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+
+  .contact-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+  }
+
+  .button--light {
+    border-color: var(--paper-soft);
+    background: var(--paper-soft);
+    color: var(--ink);
+  }
+
+  .button--light:hover {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--paper-soft);
+  }
+
+  .button--outline-light {
+    border-color: rgba(244, 240, 232, 0.32);
+    background: transparent;
+    color: var(--paper-soft);
+  }
+
+  .button--outline-light:hover {
+    border-color: var(--paper-soft);
+    background: var(--paper-soft);
+    color: var(--ink);
+  }
+
+  .contact-side {
+    display: grid;
+    align-content: end;
+    gap: 1.5rem;
+  }
+
+  .email-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-top: 1px solid rgba(244, 240, 232, 0.18);
+    padding-top: 1.2rem;
+  }
+
+  .email-card a {
+    min-height: 2.75rem;
+    color: var(--paper-soft);
+    font-size: clamp(0.95rem, 1.5vw, 1.15rem);
+    text-decoration: none;
+  }
+
+  .email-card a:hover {
+    color: var(--accent);
+  }
+
+  .copy-button {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.45rem;
+    border: 1px solid rgba(244, 240, 232, 0.24);
+    border-radius: 999px;
+    background: transparent;
+    padding: 0.5rem 0.8rem;
+    color: rgba(244, 240, 232, 0.78);
+    font-family: var(--font-jetbrains), ui-monospace, monospace;
+    font-size: 0.56rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .copy-button:hover {
+    border-color: var(--paper-soft);
+    color: var(--paper-soft);
+  }
+
+  .contact-socials {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.25rem;
+  }
+
+  .contact-socials a {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    color: rgba(244, 240, 232, 0.62);
+    font-family: var(--font-jetbrains), ui-monospace, monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.07em;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .contact-socials a:hover {
+    color: var(--paper-soft);
+  }
+}
+
+@layer components {
+  .quote-band {
+    display: grid;
+    gap: 1rem;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding-block: 1.5rem;
+    margin-bottom: clamp(3rem, 6vw, 6rem);
+  }
+
+  .quote-band p {
+    max-width: 38rem;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    line-height: 1.65;
+  }
+}
+
+@layer components {
+  .admin-link {
+    position: absolute;
+    bottom: 0.5rem;
+    right: 0.5rem;
+    opacity: 0.06;
+    font-family: var(--font-jetbrains), ui-monospace, monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.05em;
+    color: var(--ink-soft);
+    text-decoration: none;
+    transition: opacity 200ms ease, color 200ms ease;
+  }
+
+  .admin-link:hover,
+  .admin-link:focus {
+    opacity: 1;
+    color: var(--accent);
+  }
+}
+
+@layer components {
+  .admin-panel {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--paper-soft);
+    padding: 1.5rem;
+  }
+
+  .admin-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: transparent;
+    padding: 1rem 1.25rem;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 200ms ease, background-color 200ms ease;
+  }
+
+  .admin-tab:hover {
+    border-color: var(--ink-soft);
+  }
+
+  .admin-tab--active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .input {
+    width: 100%;
+    min-height: 2.75rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--paper);
+    color: var(--ink);
+    padding: 0.65rem 0.9rem;
+    font-family: var(--font-inter), sans-serif;
+    font-size: 0.9rem;
+  }
+
+  .input:focus {
+    border-color: var(--accent);
+    outline: none;
+  }
+
+  .input-file {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    font-family: var(--font-jetbrains), monospace;
+  }
+
+  .asset-card {
+    border: 1px dashed var(--line);
+    border-radius: var(--radius-md);
+    background: var(--paper);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

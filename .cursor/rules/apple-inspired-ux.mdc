@@ -1,0 +1,94 @@
+---
+description: Apple HIG-inspired interaction, accessibility, material, navigation, and feedback rules for the portfolio.
+globs: src/**/*.tsx, src/**/*.css, app/**/*.tsx, app/**/*.css
+alwaysApply: false
+---
+
+# Apple-Inspired UX Rules
+
+## Principles
+
+Apply HIG principles without cloning Apple's visual identity:
+
+- Purpose: every section answers "what does this prove?"
+- Agency: users can skip, close, go back, and navigate freely.
+- Responsibility: no dark patterns, no forced signup, no hidden data collection.
+- Familiarity: standard links, buttons, dialogs, and scroll behavior.
+- Flexibility: touch, keyboard, trackpad, screen reader, reduced motion.
+- Simplicity: remove anything that does not help the story.
+- Craft: alignment, spacing, wording, focus states, and loading states are designed.
+- Delight: one memorable moment (the hero), not constant motion.
+
+## Clarity, deference, depth
+
+- Content first. Controls and chrome recede.
+- Use materials only for floating functional layers: sticky nav, modal sheet, maybe the 3D frame.
+- Do not apply Liquid Glass-style blur to content cards or body text backgrounds.
+- Depth must communicate layering or interaction, not decorate empty space.
+- Always provide a solid fallback under `prefers-reduced-transparency`.
+
+## Controls and input
+
+- 44x44px minimum hit area; 48px preferred height; 12px spacing between adjacent controls.
+- Use native semantics first: `button`, `a`, `dialog`, `details`, `input`.
+- Every icon-only control has an accessible name.
+- Gestures always have a visible alternative. No swipe-only or drag-only actions.
+- Support full keyboard access, visible focus, Escape to close, and focus restoration.
+- Do not override browser shortcuts.
+
+## Typography and layout
+
+- Hierarchy through size, weight, spacing, and color - not through many typefaces.
+- Body text 16px+ on web; avoid thin weights; keep line length readable.
+- Support 200% text zoom and reflow at 320px without clipping or overlap.
+- Use safe areas, consistent margins, and predictable content positions.
+- Keep primary content near the top/leading edge in reading order.
+
+## Motion and feedback
+
+- Reduced motion: replace movement with fades, disable parallax, pause 3D, stop autoplay.
+- Tighten springs; avoid bounce and depth changes on scroll.
+- No autoplaying audio/video; no time-boxed UI.
+- Feedback must be immediate and explicit: hover, press, loading, success, error, empty.
+- Loading states should preserve layout and avoid spinners for sub-300ms waits.
+- Errors must say what happened and offer a recovery action.
+
+## Navigation and dialogs
+
+- Sticky nav is compact, translucent only with a solid fallback, and never hides the skip link.
+- Mobile menu uses a modal dialog/sheet with focus trap, Escape, scroll lock, and focus return.
+- Project carousel is a region, not a mystery meat gesture. Label controls and announce index changes politely.
+- Links look like links; buttons look like buttons. Do not style a div as a control.
+
+## Content honesty
+
+- Use real profile/project data only. Never invent metrics, testimonials, clients, awards, or screenshots.
+- If an asset or metric is missing, show an honest empty/fallback state.
+- Keep external links accurate and mark unavailable projects as case studies or archives.
+- Do not use hype copy banned by the SOP.
+
+## Anti-patterns
+
+- Scroll hijacking, forced animation intros, or hidden navigation.
+- Blur/glass overload, neon glows, fake depth, or 3D text.
+- Tiny controls, hover-only affordances, or color-only status.
+- Auto-rotating carousels.
+- Modals that trap focus incorrectly or fail to restore it.
+- Decorative motion that competes with reading.
+
+## Verification
+
+- Keyboard-only pass on every route.
+- Screen-reader smoke test (NVDA or VoiceOver) for nav, carousel, and dialogs.
+- Reduced Motion and Reduce Transparency emulation.
+- 200% zoom, 320px reflow, and forced-colors mode.
+- `axe` scan: no critical or serious violations.
+
+## Official references
+
+- https://developer.apple.com/design/human-interface-guidelines/design-principles
+- https://developer.apple.com/design/human-interface-guidelines/accessibility
+- https://developer.apple.com/design/human-interface-guidelines/layout
+- https://developer.apple.com/design/human-interface-guidelines/typography
+- https://developer.apple.com/design/human-interface-guidelines/materials
+- https://www.w3.org/WAI/WCAG22/quickref/

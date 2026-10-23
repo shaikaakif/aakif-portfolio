@@ -1,0 +1,65 @@
+---
+description: Motion for React usage, animation tokens, reduced-motion behavior, and performance limits.
+globs: src/**/*.tsx, src/**/*.ts, app/**/*.tsx
+alwaysApply: false
+---
+
+# Motion Design Rules
+
+## Library and imports
+
+- Use `motion` (Motion for React), not `framer-motion`.
+- Import from `motion/react`: `import { motion, MotionConfig, AnimatePresence, useReducedMotion } from "motion/react"`.
+- Wrap the app in `<MotionConfig reducedMotion="user">` so transform/layout animations are disabled for users who request reduced motion while opacity/color transitions remain.
+- Use `useReducedMotion()` for bespoke cases where a transform must be replaced by a fade.
+- Keep imports tree-shakeable; never import the whole library namespace.
+
+## Motion tokens
+
+| Token | Value | Use |
+|---|---|---|
+| `--ease-out-expo` | `cubic-bezier(0.16, 1, 0.3, 1)` | entrances, reveals |
+| `--ease-standard` | `cubic-bezier(0.2, 0, 0, 1)` | UI state changes |
+| `--duration-fast` | 140ms | hover, focus, press |
+| `--duration-base` | 240ms | drawers, cards, nav |
+| `--duration-slow` | 420ms | section reveal |
+| stagger | 40-60ms | lists, cards, text lines |
+
+- Animate only `transform` and `opacity` by default. Avoid `width`, `height`, `top`, `left`, `filter`, and `box-shadow` in loops.
+- Springs are for direct manipulation (drag, tap, 3D settle), not page-load choreography.
+- No bounce/overshoot on text or controls.
+- Use `whileInView` with `viewport={{ once: true, amount: 0.25 }}`; do not re-trigger on every scroll.
+- Use `layout`/`layoutId` only when a shared element genuinely changes position.
+- Use `AnimatePresence` for removable UI and ensure exit animations do not delay focus restoration.
+
+## Accessibility
+
+- Never autoplay carousels, video, or ambient loops.
+- Never hijack scroll. No parallax on large surfaces.
+- Reduced motion: replace x/y/scale transitions with opacity, disable auto-rotation, stop infinite loops, and pause 3D rendering.
+- Motion must not be the only signal for state, success, or error.
+- Keep focus outlines visible during and after animation.
+- No flashing above 3 Hz.
+
+## Performance
+
+- Keep above-the-fold entrance work under 420ms and avoid long tasks over 50ms.
+- Use CSS transitions for simple hover/focus; use Motion for orchestration, gestures, and layout.
+- Pause animations when the tab is hidden or the element is offscreen.
+- Avoid animating large blurred layers; blur plus transform is expensive.
+- Test on a mid-tier Android profile with 4x CPU throttling.
+
+## Anti-patterns
+
+- Scroll-jacking, pinned sections that trap the user, or forced full-page transitions.
+- Infinite floating/rotating decoration around text.
+- Animating layout properties on every scroll frame.
+- Using motion to hide slow loading or missing content.
+- `transition-all` on interactive elements.
+
+## Official references
+
+- https://motion.dev/docs/react-quick-start
+- https://motion.dev/docs/react-accessibility
+- https://motion.dev/docs/react-scroll-animations
+- https://motion.dev/docs/react-transitions

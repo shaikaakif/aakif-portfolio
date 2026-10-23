@@ -1,0 +1,76 @@
+---
+description: Restrained React Three Fiber scene rules, lazy loading, fallbacks, accessibility, and GPU budgets.
+globs: src/components/three/**/*.tsx, src/components/three/**/*.ts, src/**/*3d*.tsx, src/**/*3d*.ts
+alwaysApply: false
+---
+
+# 3D Web Design Rules
+
+## Version pairing
+
+- `@react-three/fiber@9.x` requires React 19 (`>=19 <19.4`) and `three >=0.156`.
+- Do not mix R3F 8 with React 19 or R3F 9 with React 18.
+- Import `Canvas`, `useFrame`, `useThree` from `@react-three/fiber`.
+
+## Scene brief
+
+- One hero scene only: "Signal Core" - a polished low-poly form with a thin orbital ring and a few fragments representing vision plus AI agents.
+- One meaningful interaction: pointer/touch rotates or focuses the core; keyboard-accessible DOM control mirrors the effect.
+- The scene is decorative atmosphere, never the only place information exists.
+- No external GLTF, HDR environment, texture, or font downloads in v1. Use procedural geometry and lights.
+
+## GPU budget
+
+- Draw calls: target < 30, hard ceiling < 50.
+- Triangles: target < 50k, hard ceiling < 100k.
+- One canvas per page. Never render a second canvas in a modal or footer.
+- `dpr={[1, 1.5]}`, `frameloop="demand"` where the scene can rest, and `performance={{ min: 0.5 }}`.
+- No shadows, post-processing, transmission, refraction, or real-time reflections.
+- Reuse geometries/materials; dispose on unmount; never allocate in `useFrame`.
+- Prefer `meshStandardMaterial`/`meshPhysicalMaterial` with simple lights.
+- Target 45+ fps on a mid-tier laptop and 30+ fps on a low-tier phone; degrade before dropping frames.
+
+## Loading and fallbacks
+
+- The hero headline must be the LCP element, not the canvas.
+- Load the 3D chunk after the main content using `next/dynamic` with `ssr: false` and idle/intersection scheduling.
+- Skip 3D and show the static poster when any of these is true:
+  - `prefers-reduced-motion: reduce`
+  - `navigator.connection.saveData`
+  - `deviceMemory <= 4` or `hardwareConcurrency <= 4` (treat as heuristic)
+  - WebGL context creation fails
+  - the device reports a software renderer
+- Poster fallback must be a real designed composition (SVG/CSS), not a grey box.
+- Pause rendering when offscreen or when the document is hidden; cancel observers/listeners on unmount.
+- Handle `webglcontextlost` gracefully by switching to the poster.
+
+## Accessibility
+
+- Canvas is `aria-hidden="true"` when purely atmospheric.
+- If it has an interaction, provide a visible DOM button with an explicit label and equivalent outcome.
+- Do not put readable text, project names, or CTAs inside the canvas.
+- Provide a text description of the scene near the canvas for screen-reader users.
+- Honor reduced motion by freezing the scene; do not merely slow it down.
+
+## Anti-patterns
+
+- A full-screen WebGL background that blocks text selection or scroll.
+- Heavy orbit controls on mobile.
+- Continuous rendering while idle.
+- Loading three.js on every route or for every user.
+- Using 3D to compensate for weak layout/typography.
+- Dragging the whole page into a 3D interaction without a keyboard alternative.
+
+## Verification
+
+- Check the Network panel: the 3D chunk must not load on reduced-motion or save-data.
+- Check `renderer.info.render.calls` and `triangles` in development.
+- Run a 30-second idle test: no sustained CPU/GPU work.
+- Navigate away and back: no leaked animation frames, listeners, or WebGL contexts.
+
+## Official references
+
+- https://r3f.docs.pmnd.rs/getting-started/introduction
+- https://r3f.docs.pmnd.rs/advanced/scaling-performance
+- https://r3f.docs.pmnd.rs/advanced/pitfalls
+- https://threejs.org/docs/
