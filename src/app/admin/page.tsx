@@ -83,12 +83,12 @@ export default function AdminPage() {
               <h2 style={{ fontSize: "1.5rem", fontWeight: 500, marginBottom: "0.5rem" }}>
                 Protected login
               </h2>
-              <p style={{ color: "var(--ink-soft)", fontSize: "0.875rem" }}>
+              <p style={{ color: "var(--ink)", fontSize: "0.875rem" }}>
                 Server-verified authentication, not a password check in browser JavaScript.
               </p>
             </div>
             <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              <label style={{ display: "flex", flexDirection: "column", gap: "0.4rem", fontSize: "0.8rem", color: "var(--ink-soft)", fontFamily: "var(--font-jetbrains)" }}>
+                <label style={{ display: "flex", flexDirection: "column", gap: "0.4rem", fontSize: "0.8rem", color: "var(--ink)", fontFamily: "var(--font-jetbrains)" }}>
                 Admin password
                 <input
                   name="password"
@@ -102,7 +102,7 @@ export default function AdminPage() {
               </button>
             </form>
           </div>
-          <p style={{ marginTop: "1.5rem", color: "var(--muted)", fontSize: "0.8rem" }}>
+          <p style={{ marginTop: "1.5rem", color: "var(--ink-soft)", fontSize: "0.8rem" }}>
             <Link prefetch={false} href="/" className="text-link">&larr; Back to portfolio</Link>
           </p>
         </div>
@@ -116,9 +116,7 @@ export default function AdminPage() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2rem" }}>
           <div>
             <h2 style={{ fontSize: "1.25rem", fontWeight: 500 }}>Admin dashboard</h2>
-            <p style={{ color: "var(--muted)", fontSize: "0.8rem", fontFamily: "var(--font-jetbrains)" }}>
-              Site editor &middot; {profile.name}
-            </p>
+            <p style={{ color: "var(--ink)", fontSize: "1rem", fontFamily: "var(--font-jetbrains)" }}>Site editor &middot; {profile.name}</p>
           </div>
           <Link prefetch={false} href="/" className="button button--ghost button--small">
             Exit editor
@@ -134,7 +132,7 @@ export default function AdminPage() {
               className={`admin-tab ${tab === t.id ? "admin-tab--active" : ""}`}
             >
               <div style={{ fontWeight: 500 }}>{t.label}</div>
-              <div style={{ color: "var(--muted)", fontSize: "0.7rem", fontFamily: "var(--font-jetbrains)", marginTop: "0.25rem" }}>{t.desc}</div>
+              <div style={{ color: "var(--ink-soft)", fontSize: "0.7rem", fontFamily: "var(--font-jetbrains)", marginTop: "0.25rem" }}>{t.desc}</div>
             </button>
           ))}
         </div>
@@ -144,7 +142,7 @@ export default function AdminPage() {
             <h3 style={{ fontSize: "1rem", fontWeight: 500, marginBottom: "1rem", color: "var(--ink-soft)", fontFamily: "var(--font-jetbrains)" }}>Edit content</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
               <div>
-                <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--ink-soft)", fontFamily: "var(--font-jetbrains)" }}>Hero headline</label>
+                <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--ink)", fontFamily: "var(--font-jetbrains)" }}>Hero headline</label>
                 <input
                   className="input"
                   value={content.headline}
@@ -152,7 +150,7 @@ export default function AdminPage() {
                 />
               </div>
               <div>
-                <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--ink-soft)", fontFamily: "var(--font-jetbrains)" }}>Hero subtitle</label>
+                <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--ink)", fontFamily: "var(--font-jetbrains)" }}>Hero subtitle</label>
                 <textarea
                   className="input"
                   rows={3}
@@ -161,7 +159,7 @@ export default function AdminPage() {
                 />
               </div>
               <div>
-                <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--ink-soft)", fontFamily: "var(--font-jetbrains)" }}>Email</label>
+                <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--ink)", fontFamily: "var(--font-jetbrains)" }}>Email</label>
                 <input
                   className="input"
                   type="email"
@@ -181,7 +179,7 @@ export default function AdminPage() {
 
         {tab === "assets" && (
           <div className="admin-panel">
-            <h3 style={{ fontSize: "1rem", fontWeight: 500, marginBottom: "1rem", color: "var(--ink-soft)", fontFamily: "var(--font-jetbrains)" }}>Manage assets</h3>
+            <h3 style={{ fontSize: "1rem", fontWeight: 500, marginBottom: "1rem", color: "var(--ink)", fontFamily: "var(--font-jetbrains)" }}>Manage assets</h3>
             <p style={{ color: "var(--ink-soft)", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
               Upload or replace logo, portrait, and artwork. Changes persist in browser storage for preview.
             </p>
@@ -202,7 +200,7 @@ export default function AdminPage() {
 
         {tab === "projects" && (
           <div className="admin-panel">
-            <h3 style={{ fontSize: "1rem", fontWeight: 500, marginBottom: "1rem", color: "var(--ink-soft)", fontFamily: "var(--font-jetbrains)" }}>Manage projects</h3>
+            <h3 style={{ fontSize: "1rem", fontWeight: 500, marginBottom: "1rem", color: "var(--ink)", fontFamily: "var(--font-jetbrains)" }}>Manage projects</h3>
             <p style={{ color: "var(--ink-soft)", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
               Add, edit, and reorder your projects.
             </p>
@@ -212,7 +210,7 @@ export default function AdminPage() {
                 <input className="input" placeholder="Tagline" />
                 <button className="button button--primary button--small">Add project</button>
               </div>
-              <div style={{ color: "var(--muted)", fontSize: "0.8rem", fontFamily: "var(--font-jetbrains)" }}>
+              <div style={{ color: "var(--ink-soft)", fontSize: "0.8rem", fontFamily: "var(--font-jetbrains)" }}>
                 No projects in draft. Changes apply to preview only.
               </div>
             </div>
@@ -221,7 +219,7 @@ export default function AdminPage() {
 
         {tab === "publish" && (
           <div className="admin-panel">
-            <h3 style={{ fontSize: "1rem", fontWeight: 500, marginBottom: "1rem", color: "var(--ink-soft)", fontFamily: "var(--font-jetbrains)" }}>Publish changes</h3>
+            <h3 style={{ fontSize: "1rem", fontWeight: 500, marginBottom: "1rem", color: "var(--ink)", fontFamily: "var(--font-jetbrains)" }}>Publish changes</h3>
             <p style={{ color: "var(--ink-soft)", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
               Commit and deploy your edits to the live portfolio.
             </p>
@@ -241,7 +239,7 @@ export default function AdminPage() {
                 Request deploy
               </button>
             </div>
-            <p style={{ marginTop: "1rem", color: "var(--muted)", fontSize: "0.8rem" }}>
+            <p style={{ marginTop: "1rem", color: "var(--ink-soft)", fontSize: "0.8rem" }}>
               Note: This static site has no backend. Server-verified authentication and actual deployment require a backend or deploy hook.
             </p>
           </div>

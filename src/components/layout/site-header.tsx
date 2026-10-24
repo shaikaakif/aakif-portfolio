@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight } from "@/components/ui/icons";
-import { MobileMenu } from "@/components/layout/mobile-menu";
+import { ArrowUpRight, GearIcon } from "@/components/ui/icons";
 
 const navItems = [
   { href: "/work/", label: "Work" },
@@ -32,7 +31,9 @@ export function SiteHeader() {
             Connect
             <ArrowUpRight width={15} height={15} />
           </Link>
-          <MobileMenu />
+          <Link prefetch={false} href="/admin/" className="button button--ghost button--small" aria-label="Open admin dashboard">
+            <GearIcon />
+          </Link>
         </div>
       </div>
     </header>
