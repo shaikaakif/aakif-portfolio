@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { CloseIcon } from "@/components/ui/icons";
+import { CloseIcon, GearIcon } from "@/components/ui/icons";
 import { profile } from "@/content/profile";
 
 const links = [
@@ -47,8 +47,7 @@ export function MobileMenu() {
         aria-expanded={open}
         onClick={() => setOpen(true)}
       >
-        <span aria-hidden="true" />
-        <span aria-hidden="true" />
+        <GearIcon />
       </button>
 
       <dialog

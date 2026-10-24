@@ -158,6 +158,26 @@ export function GlobeIcon(props: IconProps) {
   );
 }
 
+export function GearIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="17"
+      height="17"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 0.33 1.82l0.05 0.1c-2 1.3-5.7 1.3-7.7 0l-0.05-0.1a1.65 1.65 0 0 0-1.82-0.33c-1.3-2-1.3-5.7 0-7.7l0.1-0.05a1.65 1.65 0 0 0 0.33-1.82c-2-1.3-5.7-1.3-7.7 0l-0.1 0.05a1.65 1.65 0 0 0-0.33 1.82c1.3 2 1.3 5.7 0 7.7l0.05 0.1a1.65 1.65 0 0 0 1.82 0.33c2 1.3 5.7 1.3 7.7 0l0.05-0.1a1.65 1.65 0 0 0 1.82-0.33c1.3 2 1.3 5.7 0 7.7l-0.1 0.05a1.65 1.65 0 0 0 0.33 1.82c1.3-2 5.7-2 7.7 0l0.1-0.05a1.65 1.65 0 0 0 0.33-1.82c2-1.3 2-5.7 0-7.7z" />
+    </svg>
+  );
+}
+
 export function FlipIcon(props: IconProps) {
   return (
     <svg
