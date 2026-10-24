@@ -18,11 +18,11 @@ export default function NotFound() {
           useful route is back to the work.
         </p>
         <div className="contact-actions">
-          <Link href="/" className="button button--primary">
+          <Link prefetch={false} href="/" className="button button--primary">
             Back home
             <ArrowUpRight />
           </Link>
-          <Link href="/work/" className="button button--ghost">
+          <Link prefetch={false} href="/work/" className="button button--ghost">
             Explore the work
           </Link>
         </div>

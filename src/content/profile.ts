@@ -6,12 +6,15 @@ import type {
   TimelineEntry,
 } from "./types";
 
+const contactSubject = "Let's build something meaningful together";
+
 export const profile = {
   name: "Shaik Aakif",
   shortName: "Aakif",
   role: "AI builder & product developer",
   locationLabel: "Independent builder",
   email: "aakifshaik512@gmail.com",
+  emailHref: `mailto:aakifshaik512@gmail.com?subject=${encodeURIComponent(contactSubject)}`,
   gmailCompose:
     "https://mail.google.com/mail/?view=cm&fs=1&to=aakifshaik512@gmail.com",
   website: "https://shaik-aakif.vercel.app",

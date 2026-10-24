@@ -158,6 +158,28 @@ export function GlobeIcon(props: IconProps) {
   );
 }
 
+export function FlipIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M4 9a8 8 0 0 1 13.6-4.6L20 6.8" />
+      <path d="M20 3.5v3.3h-3.3" />
+      <path d="M20 15a8 8 0 0 1-13.6 4.6L4 17.2" />
+      <path d="M4 20.5v-3.3h3.3" />
+    </svg>
+  );
+}
+
 export function PauseIcon(props: IconProps) {
   return (
     <svg

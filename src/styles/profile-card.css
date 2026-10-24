@@ -1,0 +1,279 @@
+@layer components {
+  .profile-card {
+    position: relative;
+    width: 100%;
+    max-width: 26rem;
+    margin-inline: auto;
+    aspect-ratio: 1 / 1.1;
+    perspective: 1400px;
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .profile-card__inner {
+    position: relative;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 760ms cubic-bezier(0.22, 0.9, 0.24, 1);
+  }
+
+  .profile-card[data-flipped="true"] .profile-card__inner {
+    transform: rotateY(180deg);
+  }
+
+  .profile-card__face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lift);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  .profile-card__front {
+    background: var(--paper-deep);
+    color: var(--paper-soft);
+  }
+
+  .profile-card__photo {
+    object-fit: cover;
+    object-position: 50% 22%;
+    animation: profile-card-float 7s ease-in-out infinite;
+  }
+
+  @keyframes profile-card-float {
+    0%, 100% {
+      transform: translateY(0) scale(1);
+    }
+    50% {
+      transform: translateY(-7px) scale(1.015);
+    }
+  }
+
+  .profile-card__shade {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(
+        to top,
+        color-mix(in oklab, var(--ink) 88%, transparent) 0%,
+        color-mix(in oklab, var(--ink) 36%, transparent) 32%,
+        transparent 64%
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--ink) 34%, transparent),
+        transparent 28%
+      );
+    pointer-events: none;
+  }
+
+  .profile-card__front-top {
+    position: absolute;
+    inset: 1rem 1rem auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+    color: color-mix(in oklab, var(--paper-soft) 88%, transparent);
+    font-family: var(--font-jetbrains), ui-monospace, monospace;
+    font-size: 0.54rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .profile-card__hint {
+    opacity: 0.82;
+  }
+
+  .profile-card__front-meta {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: auto;
+    padding: 1.15rem;
+  }
+
+  .profile-card__front-name {
+    font-family: var(--font-outfit), sans-serif;
+    font-size: clamp(1.4rem, 2.8vw, 1.75rem);
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+  }
+
+  .profile-card__front-role {
+    margin-top: 0.25rem;
+    color: color-mix(in oklab, var(--paper-soft) 74%, transparent);
+    font-family: var(--font-jetbrains), ui-monospace, monospace;
+    font-size: 0.56rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .profile-card__flip {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid color-mix(in oklab, var(--paper-soft) 36%, transparent);
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--paper-soft) 14%, transparent);
+    padding: 0.5rem 0.8rem;
+    color: var(--paper-soft);
+    font-family: var(--font-jetbrains), ui-monospace, monospace;
+    font-size: 0.56rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition:
+      background-color 220ms ease,
+      border-color 220ms ease,
+      transform 220ms ease;
+  }
+
+  .profile-card__flip:hover {
+    border-color: var(--paper-soft);
+    background: color-mix(in oklab, var(--paper-soft) 24%, transparent);
+  }
+
+  .profile-card__flip:active {
+    transform: scale(0.97);
+  }
+
+  .profile-card__back {
+    transform: rotateY(180deg);
+    background:
+      radial-gradient(circle at 88% 10%, var(--accent-soft), transparent 58%),
+      var(--paper-soft);
+    padding: 1.15rem;
+    color: var(--ink);
+  }
+
+  .profile-card__back-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .profile-card__eyebrow {
+    color: var(--muted);
+    font-family: var(--font-jetbrains), ui-monospace, monospace;
+    font-size: 0.54rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .profile-card__flip--back {
+    border-color: var(--line-strong);
+    background: transparent;
+    color: var(--ink);
+    backdrop-filter: none;
+  }
+
+  .profile-card__flip--back:hover {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--paper-soft);
+  }
+
+  .profile-card__back-body {
+    margin-block: auto;
+    padding-block: 1rem;
+  }
+
+  .profile-card__name {
+    font-family: var(--font-outfit), sans-serif;
+    font-size: clamp(1.9rem, 4vw, 2.5rem);
+    font-weight: 500;
+    letter-spacing: -0.045em;
+    line-height: 1;
+  }
+
+  .profile-card__role {
+    margin-top: 0.35rem;
+    color: var(--accent);
+    font-family: var(--font-jetbrains), ui-monospace, monospace;
+    font-size: 0.56rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .profile-card__intro {
+    margin-top: 0.8rem;
+    color: var(--ink-soft);
+    font-size: clamp(0.82rem, 1.1vw, 0.95rem);
+    line-height: 1.55;
+  }
+
+  .profile-card__back-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin-top: auto;
+  }
+
+  .profile-card__story {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--ink-soft);
+    font-size: 0.8rem;
+    text-decoration: none;
+  }
+
+  .profile-card__story:hover {
+    color: var(--accent);
+  }
+}
+
+@media (min-width: 48rem) {
+  .profile-card {
+    aspect-ratio: 4 / 5;
+  }
+}
+
+@supports not (transform-style: preserve-3d) {
+  .profile-card__inner {
+    transform: none !important;
+  }
+
+  .profile-card__face {
+    transition: opacity 220ms ease;
+  }
+
+  .profile-card__back {
+    transform: none;
+    opacity: 0;
+  }
+
+  .profile-card[data-flipped="true"] .profile-card__back {
+    opacity: 1;
+  }
+
+  .profile-card[data-flipped="true"] .profile-card__front {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-card__inner {
+    transition-duration: 0.01ms;
+  }
+
+  .profile-card__photo {
+    animation: none;
+  }
+}

@@ -10,7 +10,7 @@ interface ProjectCardProps {
 
 export function ProjectCard({ project, variant = "rail" }: ProjectCardProps) {
   return (
-    <Link
+<Link prefetch={false} 
       href={`/work/${project.slug}/`}
       className={`project-card tone-${project.tone}${variant === "grid" ? " project-card--grid" : ""}`}
     >

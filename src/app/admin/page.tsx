@@ -103,7 +103,7 @@ export default function AdminPage() {
             </form>
           </div>
           <p style={{ marginTop: "1.5rem", color: "var(--muted)", fontSize: "0.8rem" }}>
-            <Link href="/" className="text-link">&larr; Back to portfolio</Link>
+            <Link prefetch={false} href="/" className="text-link">&larr; Back to portfolio</Link>
           </p>
         </div>
       </section>
@@ -120,7 +120,7 @@ export default function AdminPage() {
               Site editor &middot; {profile.name}
             </p>
           </div>
-          <Link href="/" className="button button--ghost button--small">
+          <Link prefetch={false} href="/" className="button button--ghost button--small">
             Exit editor
             <ArrowUpRight />
           </Link>

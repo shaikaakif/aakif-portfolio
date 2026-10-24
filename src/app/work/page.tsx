@@ -104,7 +104,7 @@ export default function WorkPage() {
           </div>
 
           <div className="work-foot-link">
-            <Link href="/about/" className="text-link">
+            <Link prefetch={false} href="/about/" className="text-link">
               Read the builder story
               <ArrowUpRight />
             </Link>

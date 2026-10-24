@@ -168,7 +168,7 @@ export default function AboutPage() {
             eyebrow="Foundations / 06"
             title={<span id="foundations-title">Where the range comes from.</span>}
             side={
-              <Link href="/work/" className="text-link">
+              <Link prefetch={false} href="/work/" className="text-link">
                 See the products
                 <ArrowUpRight />
               </Link>

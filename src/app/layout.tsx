@@ -12,6 +12,7 @@ import "@/styles/core.css";
 import "@/styles/shell.css";
 import "@/styles/shell-pages.css";
 import "@/styles/hero.css";
+import "@/styles/profile-card.css";
 import "@/styles/work.css";
 import "@/styles/about.css";
 import "@/styles/contact.css";

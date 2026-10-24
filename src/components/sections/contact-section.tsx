@@ -18,10 +18,7 @@ export function ContactSection() {
                 technical collaboration, and full-stack software development.
               </p>
               <div className="contact-actions">
-                <a
-                  href={`mailto:${profile.email}`}
-                  className="button button--light"
-                >
+                <a href={profile.emailHref} className="button button--light">
                   Send direct email
                   <ArrowUpRight />
                 </a>
@@ -38,7 +35,7 @@ export function ContactSection() {
 
             <div className="contact-side">
               <div className="email-card">
-                <a href={`mailto:${profile.email}`}>{profile.email}</a>
+                <a href={profile.emailHref}>{profile.email}</a>
                 <CopyEmail />
               </div>
               <div className="contact-socials">

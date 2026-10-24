@@ -198,54 +198,6 @@ summary::-webkit-details-marker {
   }
 }
 
-/* Floating portrait - breathe + float */
-.floating-portrait {
-  position: relative;
-  isolation: isolate;
-  display: inline-block;
-  will-change: transform;
-}
-
-.portrait-frame {
-  position: relative;
-  width: 100%;
-  max-width: 26rem;
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow-card);
-  animation: portrait-breathe 6s ease-in-out infinite;
-}
-
-.portrait-img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.portrait-caption {
-  position: absolute;
-  bottom: -1.6rem;
-  left: 50%;
-  transform: translateX(-50%);
-  color: var(--muted);
-  font-family: var(--font-jetbrains), ui-monospace, monospace;
-  font-size: 0.58rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-@keyframes portrait-breathe {
-  0%,
-  100% {
-    transform: translateY(0) scale(1);
-  }
-  50% {
-    transform: translateY(-0.5rem) scale(1.015);
-  }
-}
-
 /* Mobile highlighter brush canvas */
 .highlighter-canvas {
   position: fixed;

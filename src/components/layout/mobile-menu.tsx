@@ -75,7 +75,7 @@ export function MobileMenu() {
 
           <nav className="menu-nav" aria-label="Mobile primary">
             {links.map((link) => (
-              <Link
+<Link prefetch={false} 
                 key={link.href}
                 href={link.href}
                 className="menu-link"
@@ -89,7 +89,7 @@ export function MobileMenu() {
 
           <div className="menu-meta">
             <span className="eyebrow eyebrow--plain">Direct line</span>
-            <a href={`mailto:${profile.email}`}>{profile.email}</a>
+            <a href={profile.emailHref}>{profile.email}</a>
             <a href={profile.linkedin} target="_blank" rel="noreferrer">
               LinkedIn
             </a>

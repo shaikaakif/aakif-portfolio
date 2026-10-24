@@ -52,7 +52,7 @@ export default function HomePage() {
                 <span className="count-note">
                   {projects.length} products / {liveCount} live
                 </span>
-                <Link href="/work/" className="text-link">
+                <Link prefetch={false} href="/work/" className="text-link">
                   View all work
                   <ArrowUpRight />
                 </Link>

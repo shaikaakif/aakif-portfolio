@@ -69,7 +69,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       >
         <div className="container">
           <nav className="breadcrumb" aria-label="Breadcrumb">
-            <Link href="/work/">
+            <Link prefetch={false} href="/work/">
               <ArrowLeft width={13} height={13} />
               All work
             </Link>
@@ -179,7 +179,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           {nextProject ? (
             <div className="next-project">
               <p>Next project</p>
-              <Link href={`/work/${nextProject.slug}/`}>
+              <Link prefetch={false} href={`/work/${nextProject.slug}/`}>
                 {nextProject.title}
                 <ArrowUpRight />
               </Link>

@@ -9,9 +9,9 @@ export function SiteFooter() {
           © 2026 Shaik Aakif. Designed and built with intention.
         </p>
         <nav className="footer-nav" aria-label="Footer">
-          <Link href="/work/">Work</Link>
-          <Link href="/about/">About</Link>
-          <Link href="/#contact">Contact</Link>
+          <Link prefetch={false} href="/work/">Work</Link>
+          <Link prefetch={false} href="/about/">About</Link>
+          <Link prefetch={false} href="/#contact">Contact</Link>
           <a href={profile.github} target="_blank" rel="noreferrer">
             GitHub
           </a>
@@ -19,6 +19,7 @@ export function SiteFooter() {
             LinkedIn
           </a>
           <Link
+            prefetch={false}
             href="/admin"
             className="admin-link"
             aria-label="Site editor"

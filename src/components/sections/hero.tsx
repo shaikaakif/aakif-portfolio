@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight } from "@/components/ui/icons";
+import { ProfileCard } from "@/components/ui/profile-card";
 import { profile } from "@/content/profile";
-import { FloatingPortrait } from "@/components/ui/floating-portrait";
 
 export function Hero() {
   return (
@@ -22,18 +22,18 @@ export function Hero() {
           <p className="hero-sub">{profile.subtitle}</p>
 
           <div className="hero-actions">
-            <Link href="/work/" className="button button--primary">
+            <Link prefetch={false} href="/work/" className="button button--primary">
               Explore products
               <ArrowUpRight />
             </Link>
             <a href="#contact" className="button button--ghost">
-              Say hello
+              Contact me
             </a>
           </div>
         </div>
 
         <div className="hero-art">
-          <FloatingPortrait className="hero-portrait-wrapper" />
+          <ProfileCard className="hero-profile" />
         </div>
       </div>
 
