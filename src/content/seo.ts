@@ -18,8 +18,8 @@ export const seo = {
     "Product Builder",
     "LearnLens AI",
   ],
-  ogImage: "/og.png",
-  ogImageAlt: "Shaik Aakif — AI builder and product developer",
+  ogImage: "/my-photo.png",
+  ogImageAlt: "Portrait of Shaik Aakif, AI builder and product developer",
   author: "Shaik Aakif",
   twitterCard: "summary_large_image" as const,
 };
