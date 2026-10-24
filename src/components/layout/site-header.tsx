@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { ArrowUpRight, GearIcon } from "@/components/ui/icons";
+import { useState } from "react";
+import { ArrowUpRight, PersonIcon } from "@/components/ui/icons";
 
 const navItems = [
   { href: "/work/", label: "Work" },
@@ -7,7 +10,16 @@ const navItems = [
   { href: "/#contact", label: "Contact" },
 ];
 
+const quickLinks = [
+  { href: "/", label: "Home" },
+  { href: "/work/", label: "Work" },
+  { href: "/about/", label: "About me" },
+  { href: "/#contact", label: "Contact" },
+];
+
 export function SiteHeader() {
+  const [open, setOpen] = useState(false);
+
   return (
     <header className="site-header">
       <div className="container header-inner">
@@ -31,9 +43,31 @@ export function SiteHeader() {
             Connect
             <ArrowUpRight width={15} height={15} />
           </Link>
-          <Link prefetch={false} href="/admin/" className="button button--ghost button--small" aria-label="Open admin dashboard">
-            <GearIcon />
-          </Link>
+          <button
+            type="button"
+            className="profile-button"
+            aria-label="Open quick links"
+            aria-expanded={open}
+            onClick={() => setOpen((prev) => !prev)}
+          >
+            <PersonIcon />
+          </button>
+
+          {open && (
+            <div className="quick-menu" onClick={() => setOpen(false)}>
+              {quickLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="quick-link"
+                  prefetch={false}
+                  onClick={() => setOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </header>

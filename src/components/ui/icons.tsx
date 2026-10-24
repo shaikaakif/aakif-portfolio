@@ -178,6 +178,26 @@ export function GearIcon(props: IconProps) {
   );
 }
 
+export function PersonIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="17"
+      height="17"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <circle cx="12" cy="10" r="3.5" />
+      <path d="M7 18c0 2 2 4 4 4s4-2 4-4" />
+    </svg>
+  );
+}
+
 export function FlipIcon(props: IconProps) {
   return (
     <svg

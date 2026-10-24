@@ -472,3 +472,50 @@
     }
   }
 }
+
+@layer components {
+  .profile-button {
+    display: grid;
+    width: 2.85rem;
+    height: 2.85rem;
+    place-items: center;
+    border: 1px solid var(--line-strong);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .profile-button:hover {
+    border-color: var(--ink);
+  }
+
+  .quick-menu {
+    position: fixed;
+    top: var(--header-height);
+    right: clamp(1.25rem, 4.2vw, 4.5rem);
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    min-width: 14rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    background: var(--paper-soft);
+    padding: 0.75rem;
+    box-shadow: var(--shadow-card);
+  }
+
+  .quick-link {
+    display: block;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    text-decoration: none;
+  }
+
+  .quick-link:hover {
+    background: color-mix(in oklab, var(--ink) 8%, transparent);
+    color: var(--ink);
+  }
+}
