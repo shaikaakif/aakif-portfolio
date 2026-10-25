@@ -17,7 +17,7 @@ export const profile = {
   emailHref: `mailto:aakifshaik512@gmail.com?subject=${encodeURIComponent(contactSubject)}`,
   gmailCompose:
     "https://mail.google.com/mail/?view=cm&fs=1&to=aakifshaik512@gmail.com",
-  website: "https://shaik-aakif.vercel.app",
+  website: "https://shaikaakif.com",
   github: "https://github.com/shaikaakif",
   linkedin: "https://www.linkedin.com/in/shaikaakif512/",
   instagram: "https://www.instagram.com/_shaik_aakif/",

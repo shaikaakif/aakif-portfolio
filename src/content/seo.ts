@@ -1,5 +1,5 @@
 export const seo = {
-  baseUrl: "https://shaik-aakif.vercel.app",
+  baseUrl: "https://shaikaakif.com",
   themeColor: "#f4f0e8",
   title: "Shaik Aakif — AI Builder & Product Developer",
   titleTemplate: "%s | Shaik Aakif",
