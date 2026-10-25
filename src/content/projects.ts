@@ -22,7 +22,7 @@ export const projects: Project[] = [
     tone: "clay",
     artwork: "orbit",
     code: "LL",
-    image: "/images/learnlens.png",
+    image: "/images/learnlens.webp",
   },
   {
     slug: "feedy",
@@ -45,7 +45,7 @@ export const projects: Project[] = [
     tone: "cobalt",
     artwork: "grid",
     code: "FD",
-    image: "/images/feedy.png",
+    image: "/images/feedy.webp",
   },
   {
     slug: "dr-bin",
@@ -263,7 +263,7 @@ export const projects: Project[] = [
     tone: "clay",
     artwork: "orbit",
     code: "MS",
-    image: "/images/mysafe.png",
+    image: "/images/mysafe.webp",
   },
   {
     slug: "printu",
@@ -283,7 +283,7 @@ export const projects: Project[] = [
     tone: "amber",
     artwork: "fold",
     code: "PU",
-    image: "/images/printu.png",
+    image: "/images/printu.webp",
   },
 ];
 

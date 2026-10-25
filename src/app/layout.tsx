@@ -17,6 +17,7 @@ import "@/styles/work.css";
 import "@/styles/about.css";
 import "@/styles/contact.css";
 import "@/styles/case.css";
+import "@/styles/gallery.css";
 import "@/styles/responsive.css";
 import "@/styles/motion.css";
 

@@ -12,12 +12,13 @@ export function ProjectRail({ projects }: ProjectRailProps) {
   const railRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef(0);
   const [active, setActive] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
   const total = projects.length;
   const current = projects[active] ?? projects[0];
   const timerRef = useRef<number | undefined>(undefined);
   const lastActiveIndexRef = useRef<number>(0);
 
-  const AUTO_PLAY_INTERVAL = 2500;
+  const AUTO_PLAY_INTERVAL = 4000;
 
   const scrollToIndex = useCallback(
     (index: number) => {
@@ -43,6 +44,7 @@ export function ProjectRail({ projects }: ProjectRailProps) {
   }, [total, scrollToIndex]);
 
   const startAutoplay = useCallback(() => {
+    if (timerRef.current) return;
     timerRef.current = window.setInterval(move, AUTO_PLAY_INTERVAL);
   }, [move]);
 
@@ -54,9 +56,28 @@ export function ProjectRail({ projects }: ProjectRailProps) {
   }, []);
 
   useEffect(() => {
-    startAutoplay();
+    const rail = railRef.current;
+    if (!rail) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { rootMargin: "100px", threshold: 0.5 }
+    );
+
+    observer.observe(rail);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (isVisible) {
+      startAutoplay();
+    } else {
+      stopAutoplay();
+    }
     return stopAutoplay;
-  }, [startAutoplay, stopAutoplay]);
+  }, [isVisible, startAutoplay, stopAutoplay]);
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {

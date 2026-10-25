@@ -91,7 +91,7 @@ export function ProfileCard({ className }: ProfileCardProps) {
           aria-hidden={flipped}
         >
           <Image
-            src="/my-photo.png"
+            src="/images/my-photo.webp"
             alt="Shaik Aakif seated by a window in a brown overshirt"
             className="profile-card__photo"
             fill

@@ -25,6 +25,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.9,
     },
+    {
+      url: `${seo.baseUrl}/gallery/`,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
     ...projectRoutes,
   ];
 }

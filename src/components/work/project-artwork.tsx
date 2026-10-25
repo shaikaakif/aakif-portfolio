@@ -18,14 +18,17 @@ export function ProjectArtwork({ project, className }: ProjectArtworkProps) {
         {project.status}
       </span>
       {project.image ? (
-        <Image
-          src={project.image}
-          alt={project.title}
-          className="project-image"
-          fill
-          sizes="(max-width: 640px) 100vw, 33vw"
-          loading="lazy"
-        />
+        <>
+          <Image
+            src={project.image}
+            alt={project.title}
+            className="project-image"
+            fill
+            sizes="(max-width: 640px) 100vw, 33vw"
+            loading="lazy"
+          />
+          <span className="art-scrim" aria-hidden="true" />
+        </>
       ) : (
         <>
           <span className="art-shape art-shape--a" />

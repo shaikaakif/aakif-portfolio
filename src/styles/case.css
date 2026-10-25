@@ -99,14 +99,17 @@
     font-size: clamp(12rem, 34vw, 28rem);
   }
 
-  .case-art .art-label {
+.case-art .art-label {
     top: 1.5rem;
     left: 1.5rem;
+    z-index: 3;
+    color: var(--paper-soft);
   }
 
   .case-art .art-status {
     top: 1.4rem;
     right: 1.4rem;
+    z-index: 3;
   }
 
   .case-body {
