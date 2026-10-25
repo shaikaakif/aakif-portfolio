@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { ContactSection } from "@/components/sections/contact-section";
 import { Hero } from "@/components/sections/hero";
 import { ArrowUpRight } from "@/components/ui/icons";
@@ -8,6 +11,25 @@ import { projects } from "@/content/projects";
 
 export default function HomePage() {
   const liveCount = projects.filter((project) => project.status === "Live").length;
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const [sectionVisible, setSectionVisible] = useState(false);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          setSectionVisible(entry.isIntersecting);
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <>
@@ -37,7 +59,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <section className="section" id="selected-work" aria-labelledby="work-title">
+      <section ref={sectionRef} className="section" id="selected-work" aria-labelledby="work-title">
         <div className="container">
           <SectionHead
             eyebrow="Selected work / 01"
@@ -59,7 +81,7 @@ export default function HomePage() {
               </>
             }
           />
-          <ProjectRail projects={projects} />
+          <ProjectRail projects={projects} sectionVisible={sectionVisible} />
         </div>
       </section>
 
