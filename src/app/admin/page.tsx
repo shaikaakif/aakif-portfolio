@@ -1,250 +1,316 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, CloseIcon } from "@/components/ui/icons";
-import { profile } from "@/content/profile";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  ArrowUpRight,
+  FolderIcon,
+  ImageIcon,
+  FileTextIcon,
+  TrendingUpIcon,
+  PlusIcon,
+  SettingsIcon,
+} from "@/components/ui/icons";
 
-const ADMIN_PASSWORD = "aakif@8080";
-
-interface ContentState {
-  headline: string;
-  subtitle: string;
-  bio: string[];
-  email: string;
+interface MetricCardProps {
+  title: string;
+  value: number | string;
+  icon: React.ReactNode;
+  href: string;
+  description?: string;
+  trend?: string;
 }
 
-const defaultContent: ContentState = {
-  headline: "Engineering useful products that solve real problems.",
-  subtitle: profile.subtitle,
-  bio: [...profile.bio],
-  email: profile.email,
-};
-
-const loadFromStorage = (key: string, fallback: unknown): unknown => {
-  try {
-    const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : fallback;
-  } catch {
-    return fallback;
-  }
-};
-
-export default function AdminPage() {
-  const [authed, setAuthed] = useState(false);
-  const [tab, setTab] = useState<"content" | "assets" | "projects" | "publish">("content");
-  const [content, setContent] = useState<ContentState>(() =>
-    loadFromStorage("portfolio_admin_content", defaultContent) as ContentState
+function MetricCard({ title, value, icon, href, description, trend }: MetricCardProps) {
+  return (
+    <Link href={href} className="admin-metric-card" style={{ textDecoration: "none" }}>
+      <div className="admin-metric-icon" aria-hidden="true">{icon}</div>
+      <div className="admin-metric-content">
+        <p className="admin-metric-title">{title}</p>
+        <p className="admin-metric-value">{value}</p>
+        {description && <p className="admin-metric-desc">{description}</p>}
+        {trend && <p className="admin-metric-trend">{trend}</p>}
+      </div>
+      <ArrowUpRight width={20} height={20} className="admin-metric-arrow" />
+    </Link>
   );
-  const [projects] = useState<Array<Record<string, unknown>>>(() =>
-    loadFromStorage("portfolio_admin_projects", []) as Array<Record<string, unknown>>
-  );
-  const [assets] = useState<Record<string, string>>(() =>
-    loadFromStorage("portfolio_admin_assets", {}) as Record<string, string>
-  );
+}
 
-  const saveContent = () => {
-    localStorage.setItem("portfolio_admin_content", JSON.stringify(content));
-  };
+export default function AdminDashboard() {
+  const [metrics, setMetrics] = useState({
+    projectsPublished: 0,
+    projectsDraft: 0,
+    galleryImages: 0,
+    galleryPublished: 0,
+  });
 
-  const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const pw = formData.get("password") as string;
-    if (pw === ADMIN_PASSWORD) {
-      setAuthed(true);
-    }
-  };
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
 
-  const tabs = [
-    { id: "content" as const, label: "Edit content", desc: "Headlines, bio, links" },
-    { id: "assets" as const, label: "Manage assets", desc: "Logo, portrait, artwork" },
-    { id: "projects" as const, label: "Manage projects", desc: "Add, edit, reorder" },
-    { id: "publish" as const, label: "Publish changes", desc: "Commit and deploy" },
-  ];
+    const fetchMetrics = async () => {
+      try {
+        const [{ count: projectsPublished }, { count: projectsDraft }, { count: galleryImages }, { count: galleryPublished }] = await Promise.all([
+          supabase.from("projects").select("*", { count: "exact", head: true }).not("published_at", "is", null),
+          supabase.from("projects").select("*", { count: "exact", head: true }).is("published_at", null),
+          supabase.from("gallery_images").select("*", { count: "exact", head: true }),
+          supabase.from("gallery_images").select("*", { count: "exact", head: true }).eq("is_published", true),
+        ]);
 
-  if (!authed) {
-    return (
-      <section className="section" style={{ paddingBlock: "6rem 2rem" }}>
-        <div className="container" style={{ maxWidth: "34rem" }}>
-          <div
-            className="card"
-            style={{
-              border: "1px solid var(--line)",
-              borderRadius: "var(--radius-xl)",
-              padding: "2.5rem",
-              background: "var(--paper-soft)",
-            }}
-          >
-            <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-              <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>
-                <CloseIcon />
-              </div>
-              <h2 style={{ fontSize: "1.5rem", fontWeight: 500, marginBottom: "0.5rem" }}>
-                Protected login
-              </h2>
-              <p style={{ color: "var(--ink)", fontSize: "0.875rem" }}>
-                Server-verified authentication, not a password check in browser JavaScript.
-              </p>
-            </div>
-            <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                <label style={{ display: "flex", flexDirection: "column", gap: "0.4rem", fontSize: "0.8rem", color: "var(--ink)", fontFamily: "var(--font-jetbrains)" }}>
-                Admin password
-                <input
-                  name="password"
-                  type="password"
-                  className="input"
-                  required
-                />
-              </label>
-              <button type="submit" className="button button--primary">
-                Unlock editor
-              </button>
-            </form>
-          </div>
-          <p style={{ marginTop: "1.5rem", color: "var(--ink-soft)", fontSize: "0.8rem" }}>
-            <Link prefetch={false} href="/" className="text-link">&larr; Back to portfolio</Link>
-          </p>
-        </div>
-      </section>
-    );
-  }
+        setMetrics({
+          projectsPublished: projectsPublished || 0,
+          projectsDraft: projectsDraft || 0,
+          galleryImages: galleryImages || 0,
+          galleryPublished: galleryPublished || 0,
+        });
+      } catch (err) {
+        console.error("Failed to fetch metrics:", err);
+      }
+    };
+
+    fetchMetrics();
+  }, []);
 
   return (
-    <section className="section" style={{ paddingBlock: "4rem 1rem" }}>
-      <div className="container">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2rem" }}>
-          <div>
-            <h2 style={{ fontSize: "1.25rem", fontWeight: 500 }}>Admin dashboard</h2>
-            <p style={{ color: "var(--ink)", fontSize: "1rem", fontFamily: "var(--font-jetbrains)" }}>Site editor &middot; {profile.name}</p>
-          </div>
-          <Link prefetch={false} href="/" className="button button--ghost button--small">
-            Exit editor
-            <ArrowUpRight />
+    <div className="admin-dashboard">
+      <div className="admin-dashboard-header">
+        <div>
+          <h1 className="admin-dashboard-title">Dashboard</h1>
+          <p className="admin-dashboard-subtitle">Welcome back. Here&apos;s what&apos;s happening with your portfolio.</p>
+        </div>
+        <div className="admin-dashboard-actions">
+          <Link href="/admin/projects/new" className="button button--primary">
+            <PlusIcon width={16} height={16} />
+            New Project
+          </Link>
+          <Link href="/admin/gallery/upload" className="button button--ghost">
+            <ImageIcon width={16} height={16} />
+            Upload Images
           </Link>
         </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1rem", marginBottom: "2rem" }}>
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`admin-tab ${tab === t.id ? "admin-tab--active" : ""}`}
-            >
-              <div style={{ fontWeight: 500 }}>{t.label}</div>
-              <div style={{ color: "var(--ink-soft)", fontSize: "0.7rem", fontFamily: "var(--font-jetbrains)", marginTop: "0.25rem" }}>{t.desc}</div>
-            </button>
-          ))}
-        </div>
-
-        {tab === "content" && (
-          <div className="admin-panel">
-            <h3 style={{ fontSize: "1rem", fontWeight: 500, marginBottom: "1rem", color: "var(--ink-soft)", fontFamily: "var(--font-jetbrains)" }}>Edit content</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-              <div>
-                <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--ink)", fontFamily: "var(--font-jetbrains)" }}>Hero headline</label>
-                <input
-                  className="input"
-                  value={content.headline}
-                  onChange={(e) => setContent({ ...content, headline: e.target.value })}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--ink)", fontFamily: "var(--font-jetbrains)" }}>Hero subtitle</label>
-                <textarea
-                  className="input"
-                  rows={3}
-                  value={content.subtitle}
-                  onChange={(e) => setContent({ ...content, subtitle: e.target.value })}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--ink)", fontFamily: "var(--font-jetbrains)" }}>Email</label>
-                <input
-                  className="input"
-                  type="email"
-                  value={content.email}
-                  onChange={(e) => setContent({ ...content, email: e.target.value })}
-                />
-              </div>
-              <button
-                onClick={saveContent}
-                className="button button--primary"
-              >
-                Save content changes
-              </button>
-            </div>
-          </div>
-        )}
-
-        {tab === "assets" && (
-          <div className="admin-panel">
-            <h3 style={{ fontSize: "1rem", fontWeight: 500, marginBottom: "1rem", color: "var(--ink)", fontFamily: "var(--font-jetbrains)" }}>Manage assets</h3>
-            <p style={{ color: "var(--ink-soft)", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
-              Upload or replace logo, portrait, and artwork. Changes persist in browser storage for preview.
-            </p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
-              {["Portrait", "Logo", "OG cover"].map((label) => (
-                <div key={label} className="asset-card">
-                  <div style={{ fontSize: "0.75rem", color: "var(--muted)", fontFamily: "var(--font-jetbrains)", marginBottom: "0.5rem" }}>{label}</div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="input-file"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {tab === "projects" && (
-          <div className="admin-panel">
-            <h3 style={{ fontSize: "1rem", fontWeight: 500, marginBottom: "1rem", color: "var(--ink)", fontFamily: "var(--font-jetbrains)" }}>Manage projects</h3>
-            <p style={{ color: "var(--ink-soft)", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
-              Add, edit, and reorder your projects.
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              <div style={{ display: "flex", gap: "0.5rem" }}>
-                <input className="input" placeholder="Project title" />
-                <input className="input" placeholder="Tagline" />
-                <button className="button button--primary button--small">Add project</button>
-              </div>
-              <div style={{ color: "var(--ink-soft)", fontSize: "0.8rem", fontFamily: "var(--font-jetbrains)" }}>
-                No projects in draft. Changes apply to preview only.
-              </div>
-            </div>
-          </div>
-        )}
-
-        {tab === "publish" && (
-          <div className="admin-panel">
-            <h3 style={{ fontSize: "1rem", fontWeight: 500, marginBottom: "1rem", color: "var(--ink)", fontFamily: "var(--font-jetbrains)" }}>Publish changes</h3>
-            <p style={{ color: "var(--ink-soft)", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
-              Commit and deploy your edits to the live portfolio.
-            </p>
-            <div style={{ display: "flex", gap: "0.75rem" }}>
-              <button className="button button--primary" onClick={() => {
-                const blob = new Blob([JSON.stringify({ content, projects, assets }, null, 2)], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "portfolio-admin-changes.json";
-                a.click();
-                URL.revokeObjectURL(url);
-              }}>
-                Download changes bundle
-              </button>
-              <button className="button button--ghost">
-                Request deploy
-              </button>
-            </div>
-            <p style={{ marginTop: "1rem", color: "var(--ink-soft)", fontSize: "0.8rem" }}>
-              Note: This static site has no backend. Server-verified authentication and actual deployment require a backend or deploy hook.
-            </p>
-          </div>
-        )}
       </div>
-    </section>
+
+      <div className="admin-metrics-grid" role="list" aria-label="Portfolio metrics">
+        <MetricCard
+          title="Published Projects"
+          value={metrics.projectsPublished}
+          icon={<FolderIcon width={24} height={24} />}
+          href="/admin/projects"
+          description={metrics.projectsDraft > 0 ? `${metrics.projectsDraft} draft${metrics.projectsDraft !== 1 ? "s" : ""} in progress` : "All projects published"}
+        />
+        <MetricCard
+          title="Gallery Images"
+          value={metrics.galleryImages}
+          icon={<ImageIcon width={24} height={24} />}
+          href="/admin/gallery"
+          description={metrics.galleryPublished > 0 ? `${metrics.galleryPublished} published` : "No images published yet"}
+        />
+        <MetricCard
+          title="Draft Projects"
+          value={metrics.projectsDraft}
+          icon={<FileTextIcon width={24} height={24} />}
+          href="/admin/projects?status=draft"
+          description="Works in progress"
+        />
+        <MetricCard
+          title="Published Gallery"
+          value={metrics.galleryPublished}
+          icon={<TrendingUpIcon width={24} height={24} />}
+          href="/admin/gallery?status=published"
+          description="Live on your portfolio"
+        />
+      </div>
+
+      <div className="admin-quick-links" role="list" aria-label="Quick actions">
+        <Link href="/admin/projects" className="admin-quick-link">
+          <FolderIcon width={24} height={24} />
+          <span>Manage Projects</span>
+          <ArrowUpRight width={16} height={16} />
+        </Link>
+        <Link href="/admin/gallery" className="admin-quick-link">
+          <ImageIcon width={24} height={24} />
+          <span>Manage Gallery</span>
+          <ArrowUpRight width={16} height={16} />
+        </Link>
+        <Link href="/admin/media" className="admin-quick-link">
+          <FileTextIcon width={24} height={24} />
+          <span>Media Library</span>
+          <ArrowUpRight width={16} height={16} />
+        </Link>
+        <Link href="/admin/settings" className="admin-quick-link">
+          <SettingsIcon width={24} height={24} />
+          <span>Site Settings</span>
+          <ArrowUpRight width={16} height={16} />
+        </Link>
+      </div>
+
+      <style jsx>{`
+        .admin-dashboard {
+          max-width: 100%;
+        }
+
+        .admin-dashboard-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 1.5rem;
+          margin-bottom: 2.5rem;
+          flex-wrap: wrap;
+        }
+
+        .admin-dashboard-title {
+          font-size: clamp(1.75rem, 3vw, 2.25rem);
+          font-weight: 500;
+          letter-spacing: -0.02em;
+          margin: 0 0 0.5rem;
+        }
+
+        .admin-dashboard-subtitle {
+          color: var(--ink-soft);
+          font-size: 1rem;
+          margin: 0;
+        }
+
+        .admin-dashboard-actions {
+          display: flex;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+        }
+
+        .admin-metrics-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 1rem;
+          margin-bottom: 3rem;
+        }
+
+        .admin-metric-card {
+          display: grid;
+          grid-template-columns: auto 1fr auto;
+          align-items: center;
+          gap: 1rem;
+          padding: 1.25rem 1.5rem;
+          border: 1px solid var(--line);
+          border-radius: var(--radius-lg);
+          background: var(--paper-soft);
+          color: var(--ink);
+          transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+        }
+
+        .admin-metric-card:hover {
+          border-color: var(--line-strong);
+          box-shadow: var(--shadow-card);
+          transform: translateY(-1px);
+        }
+
+        .admin-metric-icon {
+          display: grid;
+          place-items: center;
+          width: 3rem;
+          height: 3rem;
+          border-radius: var(--radius-md);
+          background: var(--accent-soft);
+          color: var(--accent);
+        }
+
+        .admin-metric-content {
+          display: grid;
+          gap: 0.25rem;
+          min-width: 0;
+        }
+
+        .admin-metric-title {
+          margin: 0;
+          color: var(--muted);
+          font-family: var(--font-jetbrains), ui-monospace, monospace;
+          font-size: 0.62rem;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
+        .admin-metric-value {
+          margin: 0;
+          font-size: clamp(1.75rem, 3vw, 2.5rem);
+          font-weight: 500;
+          line-height: 1.1;
+          font-family: var(--font-outfit), sans-serif;
+        }
+
+        .admin-metric-desc {
+          margin: 0;
+          color: var(--ink-soft);
+          font-size: 0.8rem;
+        }
+
+        .admin-metric-trend {
+          margin: 0;
+          color: var(--success);
+          font-size: 0.75rem;
+          font-family: var(--font-jetbrains), ui-monospace, monospace;
+        }
+
+        .admin-metric-arrow {
+          color: var(--muted);
+          transition: transform 150ms ease, color 150ms ease;
+        }
+
+        .admin-metric-card:hover .admin-metric-arrow {
+          transform: translate(2px, -2px);
+          color: var(--accent);
+        }
+
+        .admin-quick-links {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 1rem;
+        }
+
+        .admin-quick-link {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 1.5rem;
+          border: 1px solid var(--line);
+          border-radius: var(--radius-lg);
+          background: var(--paper-soft);
+          color: var(--ink);
+          text-decoration: none;
+          text-align: center;
+          transition: all 150ms ease;
+        }
+
+        .admin-quick-link:hover {
+          border-color: var(--line-strong);
+          background: var(--paper);
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-card);
+        }
+
+        .admin-quick-link svg {
+          color: var(--muted);
+          transition: color 150ms ease;
+        }
+
+        .admin-quick-link:hover svg {
+          color: var(--accent);
+        }
+
+        .admin-quick-link span {
+          font-weight: 500;
+          font-size: 0.95rem;
+        }
+
+        @media (max-width: 48rem) {
+          .admin-dashboard-header {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .admin-dashboard-actions {
+            justify-content: flex-start;
+          }
+        }
+      `}</style>
+    </div>
   );
 }

@@ -4,6 +4,24 @@
     gap: 1.5rem;
   }
 
+  .gallery-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .gallery-filter {
+    cursor: pointer;
+    background: transparent;
+    border-color: var(--line);
+  }
+
+  .gallery-filter.is-active {
+    background: var(--ink);
+    color: var(--paper-soft);
+    border-color: var(--ink);
+  }
+
   .gallery-grid {
     display: grid;
     gap: 1rem;

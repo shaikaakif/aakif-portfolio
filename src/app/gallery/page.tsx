@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { Gallery } from "@/components/gallery/gallery";
-import { galleryImages, galleryCategories } from "@/content/gallery";
 import { seo } from "@/content/seo";
+import { PublicGallery } from "@/components/sections/public-gallery";
 
 export const metadata: Metadata = {
   title: "Gallery",
@@ -19,7 +18,7 @@ export const metadata: Metadata = {
 
 export default function GalleryPage() {
   return (
-    <>
+    <div className="gallery-page">
       <section className="page-hero" aria-labelledby="gallery-title">
         <div className="container">
           <p className="eyebrow">Gallery / visual archive</p>
@@ -33,19 +32,19 @@ export default function GalleryPage() {
             </p>
           </div>
           <div className="page-hero__meta">
-            {galleryCategories.map((cat) => (
-              <span className="role-pill" key={cat.id}>{cat.label}</span>
-            ))}
-            <span className="role-pill">{galleryImages.length} images</span>
+            <span className="role-pill">Photography</span>
+            <span className="role-pill">Events</span>
+            <span className="role-pill">Project Screenshots</span>
+            <span className="role-pill">Work & Process</span>
           </div>
         </div>
       </section>
 
       <section className="section" aria-label="Image gallery">
         <div className="container">
-          <Gallery images={galleryImages} />
+          <PublicGallery />
         </div>
       </section>
-    </>
+    </div>
   );
 }

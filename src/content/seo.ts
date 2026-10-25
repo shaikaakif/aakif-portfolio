@@ -48,8 +48,9 @@ export const seo = {
     "Product Builder",
     "LearnLens AI",
   ],
-  ogImage: "/images/hero-og-cover.webp",
-  ogImageAlt: "Portrait of Shaik Aakif, AI builder and product developer",
+  ogImage: "/images/og-image.jpg",
+  ogImageAlt:
+    "Portrait of Shaik Aakif, AI builder and product developer, beside his name and role",
   author: "Shaik Aakif",
   twitterCard: "summary_large_image" as const,
 };

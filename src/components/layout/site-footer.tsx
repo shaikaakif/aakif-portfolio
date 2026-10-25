@@ -10,6 +10,7 @@ export function SiteFooter() {
         </p>
         <nav className="footer-nav" aria-label="Footer">
           <Link prefetch={false} href="/work/">Work</Link>
+          <Link prefetch={false} href="/gallery/">Gallery</Link>
           <Link prefetch={false} href="/about/">About</Link>
           <Link prefetch={false} href="/#contact">Contact</Link>
           <a href={profile.github} target="_blank" rel="noreferrer">

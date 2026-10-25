@@ -1,5 +1,6 @@
 import { ArrowUpRight } from "@/components/ui/icons";
 import { CopyEmail } from "@/components/ui/copy-email";
+import { GitHubIcon, LinkedInIcon, InstagramIcon } from "@/components/ui/icons";
 import { profile } from "@/content/profile";
 
 export function ContactSection() {
@@ -38,15 +39,36 @@ export function ContactSection() {
                 <a href={profile.emailHref}>{profile.email}</a>
                 <CopyEmail />
               </div>
-              <div className="contact-socials">
-                <a href={profile.github} target="_blank" rel="noreferrer">
-                  GitHub
+              <div className="contact-socials" aria-label="Social profiles">
+                <a
+                  href={profile.github}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="contact-social-link"
+                  aria-label="GitHub"
+                >
+                  <GitHubIcon />
+                  <span>GitHub</span>
                 </a>
-                <a href={profile.linkedin} target="_blank" rel="noreferrer">
-                  LinkedIn
+                <a
+                  href={profile.linkedin}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="contact-social-link"
+                  aria-label="LinkedIn"
+                >
+                  <LinkedInIcon />
+                  <span>LinkedIn</span>
                 </a>
-                <a href={profile.instagram} target="_blank" rel="noreferrer">
-                  Instagram
+                <a
+                  href={profile.instagram}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="contact-social-link"
+                  aria-label="Instagram"
+                >
+                  <InstagramIcon />
+                  <span>Instagram</span>
                 </a>
               </div>
               <p className="count-note">Direct email / no forms / no gatekeeping.</p>
