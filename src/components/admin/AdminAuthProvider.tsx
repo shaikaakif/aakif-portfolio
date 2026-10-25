@@ -4,16 +4,15 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
-const ADMIN_EMAIL =
+const DEFAULT_ADMIN_EMAIL =
   process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "aakifshaik512@gmail.com";
-const ADMIN_PASSWORD =
-  process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? "aakif@8080";
 
 interface AdminAuthContextType {
   user: User | null;
   isAdmin: boolean;
   loading: boolean;
-  signIn: (password: string) => Promise<{ error: Error | null }>;
+  defaultEmail: string;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -65,24 +64,16 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signIn = async (password: string) => {
-    if (password !== ADMIN_PASSWORD) {
-      return { error: new Error("Incorrect password.") };
-    }
-
+  const signIn = async (email: string, password: string) => {
     try {
       const supabase = createSupabaseBrowserClient();
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: ADMIN_EMAIL,
+        email: email.trim(),
         password,
       });
 
       if (error) {
-        return {
-          error: new Error(
-            `${error.message}. Make sure ${ADMIN_EMAIL} exists in Supabase Auth with this password.`
-          ),
-        };
+        return { error: new Error(error.message) };
       }
 
       setUser(data.user ?? null);
@@ -109,7 +100,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AdminAuthContext.Provider value={{ user, isAdmin, loading, signIn, signOut }}>
+    <AdminAuthContext.Provider
+      value={{ user, isAdmin, loading, defaultEmail: DEFAULT_ADMIN_EMAIL, signIn, signOut }}
+    >
       {children}
     </AdminAuthContext.Provider>
   );

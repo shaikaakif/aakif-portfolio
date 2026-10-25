@@ -4,12 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/components/admin/AdminAuthProvider";
-import { ArrowUpRight, LockIcon, EyeIcon, EyeOffIcon } from "@/components/ui/icons";
+import { ArrowUpRight, MailIcon, LockIcon, EyeIcon, EyeOffIcon } from "@/components/ui/icons";
 
 export function AdminLogin() {
   const router = useRouter();
-  const { signIn, loading: authLoading } = useAdminAuth();
+  const { signIn, loading: authLoading, defaultEmail } = useAdminAuth();
 
+  const [email, setEmail] = useState(defaultEmail);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +21,7 @@ export function AdminLogin() {
     setError(null);
     setIsLoading(true);
 
-    const { error } = await signIn(password);
+    const { error } = await signIn(email, password);
     setIsLoading(false);
 
     if (error) {
@@ -48,7 +49,7 @@ export function AdminLogin() {
               Aakif Studio
             </h2>
             <p style={{ color: "var(--ink-soft)", fontSize: "0.875rem" }}>
-              Enter the admin password to continue
+              Sign in to manage your portfolio
             </p>
           </div>
 
@@ -74,6 +75,24 @@ export function AdminLogin() {
 
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             <label style={{ display: "flex", flexDirection: "column", gap: "0.4rem", fontSize: "0.8rem", color: "var(--ink)", fontFamily: "var(--font-jetbrains)" }}>
+              Email
+              <div style={{ position: "relative" }}>
+                <MailIcon width={18} height={18} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--muted)" }} />
+                <input
+                  name="email"
+                  type="email"
+                  className="input"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                  disabled={isLoading || authLoading}
+                  style={{ paddingLeft: "2.5rem", width: "100%" }}
+                />
+              </div>
+            </label>
+
+            <label style={{ display: "flex", flexDirection: "column", gap: "0.4rem", fontSize: "0.8rem", color: "var(--ink)", fontFamily: "var(--font-jetbrains)" }}>
               Password
               <div style={{ position: "relative" }}>
                 <LockIcon width={18} height={18} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--muted)" }} />
@@ -84,10 +103,9 @@ export function AdminLogin() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  autoFocus
                   autoComplete="current-password"
                   disabled={isLoading || authLoading}
-                  style={{ paddingLeft: "2.5rem", paddingRight: "2.5rem" }}
+                  style={{ paddingLeft: "2.5rem", paddingRight: "2.5rem", width: "100%" }}
                 />
                 <button
                   type="button"
@@ -116,7 +134,7 @@ export function AdminLogin() {
               disabled={isLoading || authLoading}
               style={{ marginTop: "0.5rem" }}
             >
-              {isLoading || authLoading ? "Signing in…" : "Unlock Studio"}
+              {isLoading || authLoading ? "Signing in…" : "Sign in to Studio"}
               <ArrowUpRight width={15} height={15} />
             </button>
           </form>
