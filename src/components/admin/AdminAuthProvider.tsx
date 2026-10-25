@@ -4,11 +4,16 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
+const ADMIN_EMAIL =
+  process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "aakifshaik512@gmail.com";
+const ADMIN_PASSWORD =
+  process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? "aakif@8080";
+
 interface AdminAuthContextType {
   user: User | null;
   isAdmin: boolean;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -18,30 +23,6 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  const checkAdmin = async (userId: string | undefined) => {
-    if (!userId) {
-      setIsAdmin(false);
-      return;
-    }
-    try {
-      const supabase = createSupabaseBrowserClient();
-      const { data, error } = await supabase
-        .from("admin_users")
-        .select("is_active")
-        .eq("user_id", userId)
-        .eq("is_active", true)
-        .single();
-
-      if (error || !data) {
-        setIsAdmin(false);
-      } else {
-        setIsAdmin(Boolean(data.is_active));
-      }
-    } catch {
-      setIsAdmin(false);
-    }
-  };
 
   useEffect(() => {
     let mounted = true;
@@ -53,19 +34,15 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         const { data: { session } } = await supabase.auth.getSession();
         if (mounted) {
           setUser(session?.user ?? null);
-          await checkAdmin(session?.user?.id);
+          setIsAdmin(Boolean(session?.user));
           setLoading(false);
         }
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (_event: string, session: Session | null) => {
+          (_event: string, session: Session | null) => {
             if (!mounted) return;
             setUser(session?.user ?? null);
-            if (session?.user) {
-              await checkAdmin(session.user.id);
-            } else {
-              setIsAdmin(false);
-            }
+            setIsAdmin(Boolean(session?.user));
             setLoading(false);
           }
         );
@@ -88,15 +65,45 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    const supabase = createSupabaseBrowserClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
+  const signIn = async (password: string) => {
+    if (password !== ADMIN_PASSWORD) {
+      return { error: new Error("Incorrect password.") };
+    }
+
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: ADMIN_EMAIL,
+        password,
+      });
+
+      if (error) {
+        return {
+          error: new Error(
+            `${error.message}. Make sure ${ADMIN_EMAIL} exists in Supabase Auth with this password.`
+          ),
+        };
+      }
+
+      setUser(data.user ?? null);
+      setIsAdmin(Boolean(data.user));
+      setLoading(false);
+
+      return { error: null };
+    } catch (err: unknown) {
+      return {
+        error: err instanceof Error ? err : new Error("Unable to sign in."),
+      };
+    }
   };
 
   const signOut = async () => {
-    const supabase = createSupabaseBrowserClient();
-    await supabase.auth.signOut();
+    try {
+      const supabase = createSupabaseBrowserClient();
+      await supabase.auth.signOut();
+    } catch {
+      // Ignore sign-out errors; clear local state regardless.
+    }
     setUser(null);
     setIsAdmin(false);
   };
