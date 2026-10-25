@@ -65,6 +65,9 @@ export const metadata: Metadata = {
     images: [
       {
         url: seo.ogImage,
+        width: 1200,
+        height: 630,
+        type: "image/jpeg",
         alt: seo.ogImageAlt,
       },
     ],
@@ -73,7 +76,7 @@ export const metadata: Metadata = {
     card: seo.twitterCard,
     title: seo.title,
     description: seo.description,
-    images: [seo.ogImage],
+    images: [{ url: seo.ogImage, alt: seo.ogImageAlt }],
   },
   icons: {
     icon: [

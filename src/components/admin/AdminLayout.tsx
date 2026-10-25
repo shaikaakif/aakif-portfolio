@@ -35,13 +35,16 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
-    if (!loading && !user && pathname !== "/admin/login") {
-      router.replace("/admin/login");
-    }
-  }, [loading, user, pathname, router]);
+  const normalizedPath = pathname.replace(/\/+$/, "") || "/";
+  const isLoginRoute = normalizedPath === "/admin/login";
 
-  if (pathname === "/admin/login") return <>{children}</>;
+  useEffect(() => {
+    if (!loading && !user && !isLoginRoute) {
+      router.replace("/admin/login/");
+    }
+  }, [loading, user, isLoginRoute, router]);
+
+  if (isLoginRoute) return <>{children}</>;
 
   if (loading || !user) {
     return (
@@ -116,7 +119,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <nav className="admin-nav" aria-label="Main navigation">
           <ul role="list">
             {NAV_ITEMS.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+              const isActive = normalizedPath === item.href || normalizedPath.startsWith(item.href + "/");
               const Icon = item.icon;
               return (
                 <li key={item.href}>
@@ -174,7 +177,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <header className="admin-header">
           <div className="admin-header-left">
             <h1 className="admin-page-title">
-              {NAV_ITEMS.find((i) => pathname === i.href || pathname.startsWith(i.href + "/"))?.label || "Dashboard"}
+              {NAV_ITEMS.find((i) => normalizedPath === i.href || normalizedPath.startsWith(i.href + "/"))?.label || "Dashboard"}
             </h1>
           </div>
           <div className="admin-header-right">

@@ -50,7 +50,7 @@ export const seo = {
   ],
   ogImage: "/images/og-image.jpg",
   ogImageAlt:
-    "Portrait of Shaik Aakif, AI builder and product developer, beside his name and role",
+    "Shaik Aakif seated in a wooden armchair by a window, wearing a brown overshirt and white trousers",
   author: "Shaik Aakif",
   twitterCard: "summary_large_image" as const,
 };
