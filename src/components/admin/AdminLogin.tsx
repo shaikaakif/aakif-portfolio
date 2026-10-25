@@ -62,6 +62,9 @@ export function AdminLogin() {
                 color: "var(--accent-deep)",
                 fontSize: "0.85rem",
                 marginBottom: "1.5rem",
+                overflowWrap: "anywhere",
+                wordBreak: "break-word",
+                whiteSpace: "pre-wrap",
               }}
               role="alert"
             >
