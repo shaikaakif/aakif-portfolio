@@ -15,12 +15,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const projects =
     cmsProjects.length > 0 ? cmsProjects : staticProjects;
 
-  const projectRoutes: MetadataRoute.Sitemap = projects.map((project) => ({
-    url: `${seo.baseUrl}/work/${project.slug}/`,
-    changeFrequency: "monthly" as const,
-    priority: 0.7,
-    images: project.image ? [project.image] : undefined,
-  }));
+const absoluteImage = (url?: string | null): string | undefined => {
+  if (!url) return undefined;
+  try {
+    new URL(url);
+    return url;
+  } catch {
+    return `${seo.baseUrl}${url.startsWith("/") ? "" : "/"}${url}`;
+  }
+};
+
+const projectRoutes: MetadataRoute.Sitemap = projects.map((project) => ({
+  url: `${seo.baseUrl}/work/${project.slug}/`,
+  changeFrequency: "monthly" as const,
+  priority: 0.7,
+  images: project.image ? [absoluteImage(project.image)!] : undefined,
+}));
 
   const galleryRoutes: MetadataRoute.Sitemap = galleryImages.map((image) => ({
     url: `${seo.baseUrl}/gallery/${image.id}/`,
@@ -50,7 +60,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.7,
       images: galleryImages
-        .map((image) => image.public_url)
+        .map((image) => absoluteImage(image.public_url))
         .filter((url): url is string => Boolean(url)),
     },
     {
