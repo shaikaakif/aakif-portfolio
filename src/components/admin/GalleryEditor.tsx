@@ -36,6 +36,8 @@ interface Draft {
   photographer: string;
   copyright_holder: string;
   license: string;
+  objectPositionX: number;
+  objectPositionY: number;
 }
 
 function toDraft(image: GalleryImage): Draft {
@@ -58,6 +60,8 @@ function toDraft(image: GalleryImage): Draft {
     photographer: image.photographer ?? "",
     copyright_holder: image.copyright_holder ?? "",
     license: image.license ?? "",
+    objectPositionX: 50,
+    objectPositionY: 50,
   };
 }
 
@@ -164,7 +168,14 @@ export function GalleryEditor({
       <div className="admin-preview">
         {image.public_url ? (
           // eslint-disable-next-line @next/next/no-img-element -- remote Supabase asset, unoptimized in static export
-          <img src={image.public_url} alt={image.alt_text} />
+          <img
+            src={image.public_url}
+            alt={image.alt_text}
+            style={{
+              objectFit: "cover",
+              objectPosition: `${draft.objectPositionX}% ${draft.objectPositionY}%`,
+            }}
+          />
         ) : null}
         <div className="admin-preview__meta">
           <span>{image.format?.toUpperCase() ?? "IMAGE"}</span>
@@ -174,6 +185,28 @@ export function GalleryEditor({
               : "Dimensions unknown"}
           </span>
           <span>{formatBytes(image.file_size_bytes)}</span>
+        </div>
+        <div className="admin-preview__crop">
+          <label className="admin-field__label">Move image (X)</label>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value={draft.objectPositionX}
+            onChange={(event) => update("objectPositionX", Number(event.target.value))}
+            className="admin-range"
+          />
+          <label className="admin-field__label">Move image (Y)</label>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value={draft.objectPositionY}
+            onChange={(event) => update("objectPositionY", Number(event.target.value))}
+            className="admin-range"
+          />
         </div>
       </div>
 

@@ -32,6 +32,7 @@ export function PublicGallery({
 }: PublicGalleryProps) {
   const [activeCollection, setActiveCollection] = useState<string>("all");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [expandedCaptions, setExpandedCaptions] = useState<Set<string>>(new Set());
 
   const images = initialImages;
   const collections = initialCollections;
@@ -143,16 +144,46 @@ export function PublicGallery({
                 style={{ width: "100%", height: "100%" }}
               />
             </div>
-            <div className="gallery-item__overlay">
-              <div className="gallery-item__caption">
-                <h3>{image.title}</h3>
-                {image.caption && <p>{image.caption}</p>}
-                {image.categories.length > 0 && (
-                  <span className="gallery-item__meta">
-                    {image.categories.join(" / ")}
-                  </span>
-                )}
-              </div>
+            <div className="gallery-item__caption">
+              <h3>{image.title}</h3>
+                  {image.caption && (
+                    <>
+                      <p
+                        className={
+                          image.caption.length > 120
+                            ? expandedCaptions.has(image.id)
+                              ? "gallery-caption--expanded"
+                              : "gallery-caption--truncate"
+                            : ""
+                        }
+                      >
+                        {image.caption}
+                      </p>
+                      {image.caption.length > 120 && (
+                        <button
+                          type="button"
+                          className="gallery-caption__toggle"
+                          onClick={() => {
+                            setExpandedCaptions((current) => {
+                              const next = new Set(current);
+                              if (next.has(image.id)) next.delete(image.id);
+                              else next.add(image.id);
+                              return next;
+                            });
+                          }}
+                        >
+                          {expandedCaptions.has(image.id)
+                            ? "Show less"
+                            : "Show more"}
+                        </button>
+                      )}
+                    </>
+                  )}
+              {image.categories.length > 0 && (
+                <span className="gallery-item__meta">
+                  {image.categories.join(" / ")}
+                </span>
+              )}
             </div>
           </button>
         ))}
