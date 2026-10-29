@@ -3,8 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight } from "@/components/ui/icons";
 import { ProjectArtwork } from "@/components/work/project-artwork";
-import { getProject, projects } from "@/content/projects";
+import { getProject, projects as staticProjects } from "@/content/projects";
 import { seo } from "@/content/seo";
+import { getPublishedProject, getPublishedProjects } from "@/lib/content/cms";
+import type { Project } from "@/content/types";
 
 interface ProjectPageProps {
   params: Promise<{ slug: string }>;
@@ -12,15 +14,31 @@ interface ProjectPageProps {
 
 export const dynamicParams = false;
 
-export function generateStaticParams() {
-  return projects.map((project) => ({ slug: project.slug }));
+async function resolveProject(slug: string): Promise<Project | undefined> {
+  const cmsProject = await getPublishedProject(slug);
+  if (cmsProject) return cmsProject;
+  return getProject(slug);
+}
+
+async function resolveProjects(): Promise<Project[]> {
+  const cmsProjects = await getPublishedProjects();
+  return cmsProjects.length > 0 ? cmsProjects : staticProjects;
+}
+
+export async function generateStaticParams() {
+  const cmsProjects = await getPublishedProjects();
+  const slugs = new Set([
+    ...staticProjects.map((project) => project.slug),
+    ...cmsProjects.map((project) => project.slug),
+  ]);
+  return Array.from(slugs).map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
   params,
 }: ProjectPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const project = getProject(slug);
+  const project = await resolveProject(slug);
 
   if (!project) {
     return {
@@ -41,10 +59,12 @@ export async function generateMetadata({
       url: `/work/${project.slug}/`,
       type: "article",
       images: [
-        {
-          url: seo.ogImage,
-          alt: seo.ogImageAlt,
-        },
+        project.image
+          ? { url: project.image, alt: project.title }
+          : {
+              url: seo.ogImage,
+              alt: seo.ogImageAlt,
+            },
       ],
     },
   };
@@ -52,12 +72,14 @@ export async function generateMetadata({
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { slug } = await params;
-  const project = getProject(slug);
+  const project = await resolveProject(slug);
 
   if (!project) notFound();
 
-  const index = projects.findIndex((item) => item.slug === project.slug);
-  const nextProject = projects[(index + 1) % projects.length];
+  const allProjects = await resolveProjects();
+  const index = allProjects.findIndex((item) => item.slug === project.slug);
+  const nextProject =
+    index >= 0 ? allProjects[(index + 1) % allProjects.length] : undefined;
 
   return (
     <>

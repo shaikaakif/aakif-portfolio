@@ -1,829 +1,849 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
-  PlusIcon,
-  TrashIcon,
-  EditIcon,
+  FolderPlusIcon,
   ImageIcon,
-  FilterIcon,
+  PlusIcon,
+  RefreshIcon,
   SearchIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
+  UploadIcon,
 } from "@/components/ui/icons";
+import {
+  AdminAlert,
+  AdminBadge,
+  AdminEmptyState,
+  AdminLoading,
+  AdminPageHeader,
+  useAdminToast,
+} from "@/components/admin/ui/AdminUi";
+import { ConfirmDialog } from "@/components/admin/ui/ConfirmDialog";
+import { UploadDialog } from "@/components/admin/ui/UploadDialog";
+import { GalleryCard } from "@/components/admin/GalleryCard";
+import { GalleryEditor } from "@/components/admin/GalleryEditor";
+import { slugify } from "@/lib/admin/format";
+import { buildUsageMap } from "@/lib/admin/usage";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import type {
+  GalleryCollection,
+  GalleryImage,
+  ProjectRecord,
+  SiteSettings,
+} from "@/lib/admin/types";
 
-interface GalleryImage {
-  id: string;
-  storage_path: string;
-  public_url: string;
+const PAGE_SIZE = 24;
+
+interface DeleteTarget {
+  ids: string[];
   title: string;
-  alt_text: string;
-  caption?: string | null;
-  categories: string[];
-  tags: string[];
-  collection_id?: string | null;
-  sort_order?: number | null;
-  width?: number | null;
-  height?: number | null;
-  format?: string | null;
-  file_size_bytes?: number | null;
-  is_published: boolean;
-  created_at: string;
 }
 
-interface Collection {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string | null;
-  is_published: boolean;
-  sort_order?: number | null;
-}
+type SortMode = "manual" | "newest" | "oldest" | "title";
 
-interface MetadataDraft {
-  title: string;
-  alt_text: string;
-  caption: string;
-  categories: string;
-  tags: string;
-  collection_id: string;
-}
+function GalleryManager() {
+  const searchParams = useSearchParams();
+  const { push } = useAdminToast();
 
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
-
-export default function GalleryManager() {
   const [images, setImages] = useState<GalleryImage[]>([]);
-  const [collections, setCollections] = useState<Collection[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [selectedCollection, setSelectedCollection] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showMetadataEditor, setShowMetadataEditor] = useState(false);
-  const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
-  const [draft, setDraft] = useState<MetadataDraft>({
-    title: "",
-    alt_text: "",
-    caption: "",
-    categories: "",
-    tags: "",
-    collection_id: "",
+  const [collections, setCollections] = useState<GalleryCollection[]>([]);
+  const [projects, setProjects] = useState<ProjectRecord[]>([]);
+  const [uploadDefaults, setUploadDefaults] = useState({
+    defaultStatus: "draft" as "draft" | "published",
+    defaultCategories: [] as string[],
+    requireAltText: true,
+    autoPublishOnUpload: false,
   });
-  const [showCollections, setShowCollections] = useState(false);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState(
+    searchParams.get("status") === "published"
+      ? "published"
+      : searchParams.get("status") === "draft"
+        ? "draft"
+        : "all"
+  );
+  const [collectionFilter, setCollectionFilter] = useState(
+    searchParams.get("collection") ?? "all"
+  );
+  const [sortMode, setSortMode] = useState<SortMode>("manual");
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [uploadOpen, setUploadOpen] = useState(
+    searchParams.get("upload") === "1"
+  );
+  const [editorId, setEditorId] = useState<string | null>(
+    searchParams.get("image")
+  );
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [collectionDeleteTarget, setCollectionDeleteTarget] =
+    useState<GalleryCollection | null>(null);
+  const [deletingCollection, setDeletingCollection] = useState(false);
+  const [collectionsOpen, setCollectionsOpen] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState("");
   const [newCollectionDescription, setNewCollectionDescription] = useState("");
+  const [creatingCollection, setCreatingCollection] = useState(false);
 
-  const fetchImages = useCallback(async () => {
-    setLoading(true);
+  const usageMap = useMemo(() => buildUsageMap(projects), [projects]);
+
+  const load = useCallback(async () => {
     try {
       const supabase = createSupabaseBrowserClient();
-      let query = supabase
-        .from("gallery_images")
-        .select("*")
-        .order("sort_order", { ascending: true })
-        .order("created_at", { ascending: false });
+      const [imagesResult, collectionsResult, projectsResult, settingsResult] =
+        await Promise.all([
+          supabase
+            .from("gallery_images")
+            .select("*")
+            .order("sort_order", { ascending: true })
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("gallery_collections")
+            .select("*")
+            .order("sort_order", { ascending: true })
+            .order("name", { ascending: true }),
+          supabase.from("projects").select("*"),
+          supabase
+            .from("site_settings")
+            .select("key,value")
+            .in("key", ["gallery_defaults", "publishing"]),
+        ]);
 
-      if (selectedCategory !== "all") {
-        query = query.contains("categories", [selectedCategory]);
-      }
-      if (selectedCollection !== "all") {
-        query = query.eq("collection_id", selectedCollection);
-      }
+      const firstError =
+        imagesResult.error ?? collectionsResult.error ?? projectsResult.error;
+      if (firstError) throw firstError;
 
-      const { data, error: err } = await query;
-      if (err) throw err;
-      setImages(data ?? []);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to load gallery images");
+      setImages((imagesResult.data as GalleryImage[]) ?? []);
+      setCollections((collectionsResult.data as GalleryCollection[]) ?? []);
+      setProjects((projectsResult.data as ProjectRecord[]) ?? []);
+
+      if (!settingsResult.error && settingsResult.data) {
+        const settings = settingsResult.data as Array<{
+          key: keyof SiteSettings;
+          value: unknown;
+        }>;
+        const galleryDefaults = settings.find(
+          (row) => row.key === "gallery_defaults"
+        )?.value as SiteSettings["gallery_defaults"] | undefined;
+        const publishing = settings.find(
+          (row) => row.key === "publishing"
+        )?.value as SiteSettings["publishing"] | undefined;
+
+        if (galleryDefaults || publishing) {
+          setUploadDefaults({
+            defaultStatus: galleryDefaults?.defaultStatus ?? "draft",
+            defaultCategories: galleryDefaults?.defaultCategories ?? [],
+            requireAltText: publishing?.requireAltText ?? true,
+            autoPublishOnUpload: publishing?.autoPublishOnUpload ?? false,
+          });
+        }
+      }
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Could not load the gallery."
+      );
     } finally {
       setLoading(false);
     }
-  }, [selectedCategory, selectedCollection]);
-
-  const fetchCollections = useCallback(async () => {
-    try {
-      const supabase = createSupabaseBrowserClient();
-      const { data, error: err } = await supabase
-        .from("gallery_collections")
-        .select("*")
-        .order("sort_order", { ascending: true })
-        .order("name", { ascending: true });
-      if (err) throw err;
-      setCollections(data ?? []);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to load collections");
-    }
   }, []);
 
   useEffect(() => {
-    let ignore = false;
-    const load = async () => {
-      try {
-        const supabase = createSupabaseBrowserClient();
-        let query = supabase
-          .from("gallery_images")
-          .select("*")
-          .order("sort_order", { ascending: true })
-          .order("created_at", { ascending: false });
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch resolves asynchronously
+    void load();
+  }, [load]);
 
-        if (selectedCategory !== "all") {
-          query = query.contains("categories", [selectedCategory]);
-        }
-        if (selectedCollection !== "all") {
-          query = query.eq("collection_id", selectedCollection);
-        }
-
-        const { data, error: err } = await query;
-        if (err) throw err;
-        if (!ignore) setImages(data ?? []);
-      } catch (err: unknown) {
-        if (!ignore) {
-          setError(err instanceof Error ? err.message : "Failed to load gallery images");
-        }
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    };
-    load();
-    return () => {
-      ignore = true;
-    };
-  }, [selectedCategory, selectedCollection]);
-
-  useEffect(() => {
-    let ignore = false;
-    const load = async () => {
-      try {
-        const supabase = createSupabaseBrowserClient();
-        const { data, error: err } = await supabase
-          .from("gallery_collections")
-          .select("*")
-          .order("sort_order", { ascending: true })
-          .order("name", { ascending: true });
-        if (err) throw err;
-        if (!ignore) setCollections(data ?? []);
-      } catch (err: unknown) {
-        if (!ignore) {
-          setError(err instanceof Error ? err.message : "Failed to load collections");
-        }
-      }
-    };
-    load();
-    return () => {
-      ignore = true;
-    };
-  }, []);
-
-  const filteredImages = images.filter((img) => {
-    const matchesSearch =
-      img.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      img.alt_text.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "all" || img.categories.includes(selectedCategory);
-    const matchesCollection =
-      selectedCollection === "all" || img.collection_id === selectedCollection;
-    return matchesSearch && matchesCategory && matchesCollection;
-  });
-
-  const allCategories = [...new Set(images.flatMap((img) => img.categories))];
-
-  const openMetadataEditor = (image: GalleryImage) => {
-    setEditingImage(image);
-    setDraft({
-      title: image.title,
-      alt_text: image.alt_text,
-      caption: image.caption ?? "",
-      categories: image.categories.join(", "),
-      tags: image.tags.join(", "),
-      collection_id: image.collection_id ?? "",
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const result = images.filter((image) => {
+      const matchesSearch =
+        !query ||
+        image.title.toLowerCase().includes(query) ||
+        image.alt_text.toLowerCase().includes(query) ||
+        image.categories.some((category) =>
+          category.toLowerCase().includes(query)
+        );
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "published" && image.is_published) ||
+        (statusFilter === "draft" && !image.is_published);
+      const matchesCollection =
+        collectionFilter === "all" ||
+        image.collection_id === collectionFilter;
+      return matchesSearch && matchesStatus && matchesCollection;
     });
-    setShowMetadataEditor(true);
-  };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    if (files.length === 0) return;
-
-    setUploading(true);
-    setError(null);
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const pct = Math.round(((i + 1) / files.length) * 100);
-      setProgress(pct);
-
-      try {
-        const supabase = createSupabaseBrowserClient();
-        const fileExt = file.name.split(".").pop();
-        const fileName = `${crypto.randomUUID()}.${fileExt}`;
-        const storagePath = `gallery/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("portfolio-media")
-          .upload(storagePath, file, {
-            cacheControl: "3600",
-            upsert: false,
-          });
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from("portfolio-media")
-          .getPublicUrl(storagePath);
-
-        const { error: insertError } = await supabase
-          .from("gallery_images")
-          .insert({
-            storage_path: storagePath,
-            public_url: publicUrl,
-            title: file.name.replace(/\.[^/.]+$/, ""),
-            alt_text: file.name.replace(/\.[^/.]+$/, ""),
-            categories: ["gallery"],
-            tags: [],
-            is_published: false,
-          });
-
-        if (insertError) throw insertError;
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : "Upload failed");
+    return [...result].sort((a, b) => {
+      if (sortMode === "newest") {
+        return (
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
       }
-    }
-
-    setUploading(false);
-    setProgress(0);
-    (e.target as HTMLInputElement).value = "";
-    fetchImages();
-  };
-
-  const handlePublish = async (id: string, publish: boolean) => {
-    try {
-      const supabase = createSupabaseBrowserClient();
-      const { error } = await supabase
-        .from("gallery_images")
-        .update({ is_published: publish })
-        .eq("id", id);
-
-      if (error) {
-        setError(error.message);
-        return;
+      if (sortMode === "oldest") {
+        return (
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
       }
-      fetchImages();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to publish");
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this image?")) return;
-
-    try {
-      const supabase = createSupabaseBrowserClient();
-      const image = images.find((img) => img.id === id);
-      if (image) {
-        await supabase.storage.from("portfolio-media").remove([image.storage_path]);
+      if (sortMode === "title") {
+        return a.title.localeCompare(b.title);
       }
-
-      const { error } = await supabase
-        .from("gallery_images")
-        .delete()
-        .eq("id", id);
-      if (error) {
-        setError(error.message);
-        return;
-      }
-      fetchImages();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Delete failed");
-    }
-  };
-
-  const handleSaveMetadata = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingImage) return;
-
-    try {
-      const supabase = createSupabaseBrowserClient();
-      const { error } = await supabase
-        .from("gallery_images")
-        .update({
-          title: draft.title.trim(),
-          alt_text: draft.alt_text.trim(),
-          caption: draft.caption.trim() || null,
-          categories: draft.categories
-            .split(",")
-            .map((c) => c.trim())
-            .filter(Boolean),
-          tags: draft.tags
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean),
-          collection_id: draft.collection_id || null,
-        })
-        .eq("id", editingImage.id);
-
-      if (error) {
-        setError(error.message);
-        return;
-      }
-      setShowMetadataEditor(false);
-      setEditingImage(null);
-      fetchImages();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Save failed");
-    }
-  };
-
-  const handleMove = async (id: string, direction: "up" | "down") => {
-    const index = images.findIndex((img) => img.id === id);
-    const swapIndex = direction === "up" ? index - 1 : index + 1;
-    if (index < 0 || swapIndex < 0 || swapIndex >= images.length) return;
-
-    const reordered = [...images];
-    [reordered[index], reordered[swapIndex]] = [reordered[swapIndex], reordered[index]];
-
-    try {
-      const supabase = createSupabaseBrowserClient();
-      await Promise.all(
-        reordered.map((img, position) =>
-          supabase
-            .from("gallery_images")
-            .update({ sort_order: position })
-            .eq("id", img.id)
-        )
+      return (
+        (a.sort_order ?? 0) - (b.sort_order ?? 0) ||
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
-      setImages(reordered);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Reorder failed");
+    });
+  }, [images, search, statusFilter, collectionFilter, sortMode]);
+
+  const visible = filtered.slice(0, visibleCount);
+  const editorImage =
+    images.find((image) => image.id === editorId) ?? null;
+
+  const setFilter = (updater: () => void) => {
+    updater();
+    setVisibleCount(PAGE_SIZE);
+  };
+
+  const toggleSelected = (id: string, selected: boolean) => {
+    setSelectedIds((current) =>
+      selected
+        ? current.includes(id)
+          ? current
+          : [...current, id]
+        : current.filter((item) => item !== id)
+    );
+  };
+
+  const clearSelection = () => setSelectedIds([]);
+
+  const togglePublish = async (image: GalleryImage) => {
+    const supabase = createSupabaseBrowserClient();
+    const { error: updateError } = await supabase
+      .from("gallery_images")
+      .update({ is_published: !image.is_published })
+      .eq("id", image.id);
+
+    if (updateError) {
+      push(updateError.message, "error");
+      return;
+    }
+
+    push(
+      image.is_published ? "Image unpublished." : "Image published.",
+      "success"
+    );
+    await load();
+  };
+
+  const copyUrl = async (image: GalleryImage) => {
+    if (!image.public_url) {
+      push("This image has no public URL.", "error");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(image.public_url);
+      push("Image URL copied.", "success");
+    } catch {
+      push("Unable to copy. Select the URL manually.", "error");
     }
   };
 
-  const handleCreateCollection = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const requestDelete = (targets: GalleryImage[]) => {
+    const used = targets.filter((image) => (usageMap[image.id] ?? []).length > 0);
+    if (used.length > 0) {
+      push(
+        `${used.map((image) => image.title).join(", ")} ${
+          used.length === 1 ? "is" : "are"
+        } used by a project. Remove the reference first.`,
+        "error"
+      );
+      return;
+    }
+
+    setDeleteTarget({
+      ids: targets.map((image) => image.id),
+      title:
+        targets.length === 1
+          ? targets[0].title
+          : `${targets.length} images`,
+    });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const supabase = createSupabaseBrowserClient();
+    const targets = images.filter((image) =>
+      deleteTarget.ids.includes(image.id)
+    );
+
+    const { error: deleteError } = await supabase
+      .from("gallery_images")
+      .delete()
+      .in("id", deleteTarget.ids);
+
+    if (deleteError) {
+      setDeleting(false);
+      push(deleteError.message, "error");
+      return;
+    }
+
+    const paths = targets
+      .map((image) => image.storage_path)
+      .filter((path): path is string => Boolean(path));
+    if (paths.length > 0) {
+      const { error: storageError } = await supabase.storage
+        .from("portfolio-media")
+        .remove(paths);
+      if (storageError) {
+        push(
+          "Records deleted, but some storage files could not be removed.",
+          "error"
+        );
+      }
+    }
+
+    setDeleting(false);
+    setDeleteTarget(null);
+    clearSelection();
+    if (editorId && deleteTarget.ids.includes(editorId)) setEditorId(null);
+    push(
+      deleteTarget.ids.length === 1
+        ? "Image deleted."
+        : `${deleteTarget.ids.length} images deleted.`,
+      "success"
+    );
+    await load();
+  };
+
+  const bulkUpdate = async (publish: boolean) => {
+    if (selectedIds.length === 0) return;
+    const supabase = createSupabaseBrowserClient();
+    const { error: updateError } = await supabase
+      .from("gallery_images")
+      .update({ is_published: publish })
+      .in("id", selectedIds);
+
+    if (updateError) {
+      push(updateError.message, "error");
+      return;
+    }
+
+    push(
+      `${selectedIds.length} image${selectedIds.length === 1 ? "" : "s"} ${
+        publish ? "published" : "unpublished"
+      }.`,
+      "success"
+    );
+    clearSelection();
+    await load();
+  };
+
+  const createCollection = async (event: React.FormEvent) => {
+    event.preventDefault();
     const name = newCollectionName.trim();
     if (!name) return;
 
-    try {
-      const supabase = createSupabaseBrowserClient();
-      const { error } = await supabase.from("gallery_collections").insert({
+    setCreatingCollection(true);
+    const supabase = createSupabaseBrowserClient();
+    const { error: insertError } = await supabase
+      .from("gallery_collections")
+      .insert({
         name,
         slug: slugify(name),
         description: newCollectionDescription.trim() || null,
         is_published: false,
       });
-      if (error) {
-        setError(error.message);
-        return;
-      }
-      setNewCollectionName("");
-      setNewCollectionDescription("");
-      fetchCollections();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to create collection");
+    setCreatingCollection(false);
+
+    if (insertError) {
+      push(insertError.message, "error");
+      return;
     }
+
+    setNewCollectionName("");
+    setNewCollectionDescription("");
+    push("Collection created.", "success");
+    await load();
   };
 
-  const handleToggleCollection = async (id: string, publish: boolean) => {
-    try {
-      const supabase = createSupabaseBrowserClient();
-      const { error } = await supabase
-        .from("gallery_collections")
-        .update({ is_published: publish })
-        .eq("id", id);
-      if (error) {
-        setError(error.message);
-        return;
-      }
-      fetchCollections();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to update collection");
+  const toggleCollection = async (collection: GalleryCollection) => {
+    const supabase = createSupabaseBrowserClient();
+    const { error: updateError } = await supabase
+      .from("gallery_collections")
+      .update({ is_published: !collection.is_published })
+      .eq("id", collection.id);
+
+    if (updateError) {
+      push(updateError.message, "error");
+      return;
     }
+    await load();
   };
 
-  const handleDeleteCollection = async (id: string) => {
-    if (!window.confirm("Delete this collection? Images will be unassigned.")) return;
-    try {
-      const supabase = createSupabaseBrowserClient();
-      const { error } = await supabase
-        .from("gallery_collections")
-        .delete()
-        .eq("id", id);
-      if (error) {
-        setError(error.message);
-        return;
-      }
-      fetchCollections();
-      fetchImages();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to delete collection");
+  const confirmDeleteCollection = async () => {
+    if (!collectionDeleteTarget) return;
+    setDeletingCollection(true);
+    const supabase = createSupabaseBrowserClient();
+    const { error: deleteError } = await supabase
+      .from("gallery_collections")
+      .delete()
+      .eq("id", collectionDeleteTarget.id);
+
+    if (deleteError) {
+      setDeletingCollection(false);
+      push(deleteError.message, "error");
+      return;
     }
+    setDeletingCollection(false);
+    setCollectionDeleteTarget(null);
+    push("Collection deleted.", "success");
+    await load();
   };
 
-  const handleCopyUrl = async (url: string) => {
-    try {
-      await navigator.clipboard.writeText(url);
-      setNotice("Image URL copied to clipboard.");
-      setTimeout(() => setNotice(null), 2500);
-    } catch {
-      setError("Unable to copy URL. Select and copy it manually.");
-    }
-  };
+  const categories = useMemo(
+    () => Array.from(new Set(images.flatMap((image) => image.categories))),
+    [images]
+  );
+
+  const allVisibleSelected =
+    visible.length > 0 && visible.every((image) => selectedIds.includes(image.id));
 
   return (
-    <div className="admin-gallery-manager">
-      <div className="admin-page-header">
-        <div className="admin-header-content">
-          <h1 className="admin-page-title">Gallery Manager</h1>
-          <p className="admin-page-subtitle">
-            Upload, organize, and publish your photography and project images.
-          </p>
-        </div>
-        <div className="admin-header-actions">
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleFileChange}
-            className="hidden-file-input"
-          />
+    <div className="admin-page">
+      <AdminPageHeader
+        eyebrow="Visual archive"
+        title="Gallery"
+        description="Curate published images, organize collections, and keep alt text and credits accurate."
+        actions={
+          <>
+            <button
+              type="button"
+              className="admin-button admin-button--ghost"
+              onClick={() => {
+                setLoading(true);
+                setError(null);
+                void load();
+              }}
+              disabled={loading}
+            >
+              <RefreshIcon width={16} height={16} />
+              Refresh
+            </button>
+            <button
+              type="button"
+              className="admin-button admin-button--primary"
+              onClick={() => setUploadOpen(true)}
+            >
+              <UploadIcon width={16} height={16} />
+              Upload images
+            </button>
+          </>
+        }
+      />
+
+      {error ? (
+        <AdminAlert tone="error">
+          {error}{" "}
           <button
-            onClick={() =>
-              (document.querySelector(".hidden-file-input") as HTMLInputElement)?.click()
-            }
-            className="button button--primary"
+            type="button"
+            className="admin-button admin-button--ghost admin-button--small"
+            onClick={() => {
+              setLoading(true);
+              setError(null);
+              void load();
+            }}
           >
-            <PlusIcon width={16} height={16} />
-            Upload Images
+            Retry
           </button>
-        </div>
-      </div>
+        </AdminAlert>
+      ) : null}
 
-      {error && (
-        <div className="admin-error-banner" role="alert">
-          {error}
-        </div>
-      )}
-      {notice && (
-        <div className="admin-notice-banner" role="status">
-          {notice}
-        </div>
-      )}
-
-      <div className="admin-collections">
-        <button
-          type="button"
-          className="admin-collections-toggle"
-          onClick={() => setShowCollections((prev) => !prev)}
-          aria-expanded={showCollections}
-        >
-          Collections ({collections.length})
-          <span aria-hidden="true">{showCollections ? "−" : "+"}</span>
-        </button>
-
-        {showCollections && (
-          <div className="admin-collections-body">
-            <form className="admin-collection-form" onSubmit={handleCreateCollection}>
-              <input
-                type="text"
-                className="input"
-                placeholder="New collection name"
-                value={newCollectionName}
-                onChange={(e) => setNewCollectionName(e.target.value)}
-              />
-              <input
-                type="text"
-                className="input"
-                placeholder="Description (optional)"
-                value={newCollectionDescription}
-                onChange={(e) => setNewCollectionDescription(e.target.value)}
-              />
-              <button type="submit" className="button button--primary">
-                Add Collection
-              </button>
-            </form>
-
-            <ul className="admin-collection-list">
-              {collections.length === 0 && (
-                <li className="admin-collection-empty">No collections yet.</li>
-              )}
-              {collections.map((collection) => (
-                <li key={collection.id} className="admin-collection-row">
-                  <div>
-                    <strong>{collection.name}</strong>
-                    <span className="admin-collection-slug">/{collection.slug}/</span>
-                  </div>
-                  <div className="admin-collection-actions">
-                    <button
-                      type="button"
-                      className="admin-link-btn"
-                      onClick={() =>
-                        handleToggleCollection(collection.id, !collection.is_published)
-                      }
-                    >
-                      {collection.is_published ? "Unpublish" : "Publish"}
-                    </button>
-                    <button
-                      type="button"
-                      className="admin-link-btn admin-link-btn--delete"
-                      onClick={() => handleDeleteCollection(collection.id)}
-                      title="Delete collection"
-                    >
-                      <TrashIcon width={16} height={16} />
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-
-      <div className="admin-gallery-toolbar">
-        <div className="admin-search-filters">
-          <div className="admin-search-box">
+      <div className="admin-toolbar">
+        <div className="admin-toolbar__group">
+          <div className="admin-search">
             <SearchIcon
-              width={18}
-              height={18}
-              style={{ color: "var(--muted)", marginRight: "0.75rem" }}
+              width={17}
+              height={17}
+              className="admin-search__icon"
+              aria-hidden="true"
             />
             <input
-              type="text"
-              placeholder="Search images..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="input"
-              style={{ paddingLeft: "2.5rem" }}
+              type="search"
+              className="admin-input"
+              placeholder="Search title, alt text, or category…"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setVisibleCount(PAGE_SIZE);
+              }}
+              aria-label="Search gallery"
             />
           </div>
-          <div className="admin-filter-group">
-            <FilterIcon
-              width={18}
-              height={18}
-              style={{ color: "var(--muted)", marginRight: "0.75rem" }}
-            />
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="input"
-              aria-label="Filter by category"
-            >
-              <option value="all">All Categories</option>
-              {allCategories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-            <select
-              value={selectedCollection}
-              onChange={(e) => setSelectedCollection(e.target.value)}
-              className="input"
-              aria-label="Filter by collection"
-            >
-              <option value="all">All Collections</option>
-              {collections.map((collection) => (
-                <option key={collection.id} value={collection.id}>
-                  {collection.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            className="admin-select admin-select--compact"
+            value={statusFilter}
+            onChange={(event) =>
+              setFilter(() => setStatusFilter(event.target.value))
+            }
+            aria-label="Filter by status"
+          >
+            <option value="all">All statuses</option>
+            <option value="published">Published</option>
+            <option value="draft">Drafts</option>
+          </select>
+          <select
+            className="admin-select admin-select--compact"
+            value={collectionFilter}
+            onChange={(event) =>
+              setFilter(() => setCollectionFilter(event.target.value))
+            }
+            aria-label="Filter by collection"
+          >
+            <option value="all">All collections</option>
+            {collections.map((collection) => (
+              <option key={collection.id} value={collection.id}>
+                {collection.name}
+              </option>
+            ))}
+          </select>
+          <select
+            className="admin-select admin-select--compact"
+            value={sortMode}
+            onChange={(event) =>
+              setFilter(() => setSortMode(event.target.value as SortMode))
+            }
+            aria-label="Sort images"
+          >
+            <option value="manual">Manual order</option>
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="title">Title A–Z</option>
+          </select>
         </div>
-        <div className="admin-upload-status">
-          {uploading && (
-            <div className="admin-progress-bar">
-              <div
-                className="admin-progress-fill"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          )}
-        </div>
+        <span className="admin-toolbar__count">
+          {filtered.length} of {images.length} images
+        </span>
       </div>
 
-      <div className="admin-gallery-grid" role="grid" aria-label="Gallery images">
-        {loading && (
-          <div className="admin-loading" role="status">
-            Loading images...
-          </div>
-        )}
-        {!loading && filteredImages.length === 0 && (
-          <div className="admin-empty-state">
-            <ImageIcon width={48} height={48} style={{ color: "var(--muted)" }} />
-            <p>No images found</p>
-            {images.length > 0 ? (
-              <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: "0.5rem" }}>
-                Try adjusting your search or filter
-              </p>
-            ) : null}
-          </div>
-        )}
-        {!loading &&
-          filteredImages.map((image) => (
-            <div key={image.id} className="admin-gallery-item">
-              <div className="admin-gallery-image-wrap">
-                {/* eslint-disable-next-line @next/next/no-img-element -- remote Supabase asset, images are unoptimized in this static export */}
-                <img
-                  src={image.public_url}
-                  alt={image.alt_text}
-                  className="admin-gallery-image"
-                  loading="lazy"
-                />
-                <div className="admin-gallery-overlay">
-                  <div className="admin-gallery-actions">
-                    <button
-                      onClick={() => openMetadataEditor(image)}
-                      title="Edit metadata"
-                      className="admin-icon-button"
-                    >
-                      <EditIcon width={18} height={18} />
-                    </button>
-                    <button
-                      onClick={() =>
-                        handlePublish(image.id, !image.is_published)
-                      }
-                      title={image.is_published ? "Unpublish" : "Publish"}
-                      className={`admin-icon-button ${
-                        image.is_published ? "published" : ""
-                      }`}
-                    >
-                      <ImageIcon width={18} height={18} />
-                    </button>
-                    <button
-                      onClick={() => handleCopyUrl(image.public_url)}
-                      title="Copy image URL"
-                      className="admin-icon-button"
-                    >
-                      ⧉
-                    </button>
-                    <button
-                      onClick={() => handleDelete(image.id)}
-                      title="Delete"
-                      className="admin-icon-button admin-icon-button--delete"
-                    >
-                      <TrashIcon width={18} height={18} />
-                    </button>
-                  </div>
-                  <div className="admin-gallery-order">
-                    <button
-                      type="button"
-                      onClick={() => handleMove(image.id, "up")}
-                      title="Move earlier"
-                      aria-label="Move image earlier"
-                      className="admin-order-button"
-                    >
-                      <ChevronLeftIcon width={16} height={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleMove(image.id, "down")}
-                      title="Move later"
-                      aria-label="Move image later"
-                      className="admin-order-button"
-                    >
-                      <ChevronRightIcon width={16} height={16} />
-                    </button>
-                  </div>
-                  <span className={`admin-gallery-badge ${image.is_published ? "published" : "draft"}`}>
-                    {image.is_published ? "Published" : "Draft"}
-                  </span>
-                </div>
-              </div>
-              <div className="admin-gallery-info">
-                <h3 className="admin-gallery-title">{image.title}</h3>
-                <p className="admin-gallery-alt" title={image.alt_text}>
-                  {image.alt_text}
-                </p>
-                <div className="admin-gallery-meta">
-                  {image.categories.map((cat) => (
-                    <span key={cat} className="admin-gallery-tag">
-                      {cat}
-                    </span>
-                  ))}
-                  {image.collection_id && (
-                    <span className="admin-gallery-tag">
-                      {collections.find((c) => c.id === image.collection_id)?.name ?? "Collection"}
-                    </span>
-                  )}
-                  {image.width && image.height && (
-                    <span className="admin-gallery-dimensions">
-                      {image.width}×{image.height}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
+      {categories.length > 0 ? (
+        <div className="admin-toolbar__group" aria-label="Categories">
+          {categories.map((category) => (
+            <AdminBadge key={category}>{category}</AdminBadge>
           ))}
-      </div>
+        </div>
+      ) : null}
 
-      {showMetadataEditor && editingImage && (
-        <div className="admin-modal-overlay" onClick={() => setShowMetadataEditor(false)}>
-          <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="admin-modal-header">
-              <h2>Edit Image Metadata</h2>
-              <button
-                onClick={() => setShowMetadataEditor(false)}
-                className="admin-modal-close"
-              >
-                ×
-              </button>
-            </div>
-            <form className="admin-metadata-form" onSubmit={handleSaveMetadata}>
-              <div className="admin-form-group">
-                <label className="admin-form-label" htmlFor="gallery-title">Title</label>
-                <input
-                  id="gallery-title"
-                  type="text"
-                  className="input"
-                  value={draft.title}
-                  onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="admin-form-group">
-                <label className="admin-form-label" htmlFor="gallery-alt">Alt Text</label>
-                <textarea
-                  id="gallery-alt"
-                  className="input"
-                  rows={3}
-                  value={draft.alt_text}
-                  onChange={(e) => setDraft({ ...draft, alt_text: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="admin-form-group">
-                <label className="admin-form-label" htmlFor="gallery-caption">Caption</label>
-                <textarea
-                  id="gallery-caption"
-                  className="input"
-                  rows={2}
-                  value={draft.caption}
-                  onChange={(e) => setDraft({ ...draft, caption: e.target.value })}
-                />
-              </div>
-              <div className="admin-form-group">
-                <label className="admin-form-label" htmlFor="gallery-categories">
-                  Categories (comma-separated)
+      <section className="admin-collections" aria-label="Collections">
+        <button
+          type="button"
+          className="admin-collections__toggle"
+          onClick={() => setCollectionsOpen((current) => !current)}
+          aria-expanded={collectionsOpen}
+          aria-controls="gallery-collections-panel"
+        >
+          <span>
+            Collections{" "}
+            <span className="admin-toolbar__count">({collections.length})</span>
+          </span>
+          <span aria-hidden="true">{collectionsOpen ? "−" : "+"}</span>
+        </button>
+        {collectionsOpen ? (
+          <div className="admin-collections__body" id="gallery-collections-panel">
+            <form className="admin-collection-form" onSubmit={createCollection}>
+              <div className="admin-field">
+                <label className="admin-field__label" htmlFor="new-collection">
+                  New collection
                 </label>
                 <input
-                  id="gallery-categories"
-                  type="text"
-                  className="input"
-                  value={draft.categories}
-                  onChange={(e) => setDraft({ ...draft, categories: e.target.value })}
+                  id="new-collection"
+                  className="admin-input"
+                  value={newCollectionName}
+                  onChange={(event) => setNewCollectionName(event.target.value)}
+                  placeholder="Name"
                 />
               </div>
-              <div className="admin-form-group">
-                <label className="admin-form-label" htmlFor="gallery-tags">Tags (comma-separated)</label>
+              <div className="admin-field">
+                <label
+                  className="admin-field__label"
+                  htmlFor="new-collection-description"
+                >
+                  Description
+                </label>
                 <input
-                  id="gallery-tags"
-                  type="text"
-                  className="input"
-                  value={draft.tags}
-                  onChange={(e) => setDraft({ ...draft, tags: e.target.value })}
+                  id="new-collection-description"
+                  className="admin-input"
+                  value={newCollectionDescription}
+                  onChange={(event) =>
+                    setNewCollectionDescription(event.target.value)
+                  }
+                  placeholder="Optional"
                 />
               </div>
-              <div className="admin-form-group">
-                <label className="admin-form-label" htmlFor="gallery-collection">Collection</label>
-                <select
-                  id="gallery-collection"
-                  className="input"
-                  value={draft.collection_id}
-                  onChange={(e) => setDraft({ ...draft, collection_id: e.target.value })}
-                >
-                  <option value="">No collection</option>
-                  {collections.map((collection) => (
-                    <option key={collection.id} value={collection.id}>
-                      {collection.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="admin-form-actions">
-                <button
-                  type="button"
-                  onClick={() => setShowMetadataEditor(false)}
-                  className="button button--ghost"
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="button button--primary">
-                  Save Changes
-                </button>
-              </div>
+              <button
+                type="submit"
+                className="admin-button admin-button--primary"
+                disabled={creatingCollection || !newCollectionName.trim()}
+              >
+                <FolderPlusIcon width={16} height={16} />
+                {creatingCollection ? "Creating…" : "Add collection"}
+              </button>
             </form>
+
+            {collections.length === 0 ? (
+              <p className="admin-empty__text">No collections yet.</p>
+            ) : (
+              <ul className="admin-collection-list">
+                {collections.map((collection) => (
+                  <li className="admin-collection-row" key={collection.id}>
+                    <div className="admin-collection-row__name">
+                      <strong>{collection.name}</strong>
+                      <span className="admin-collection-row__slug">
+                        /{collection.slug}/ ·{" "}
+                        {collection.is_published ? "Published" : "Draft"}
+                      </span>
+                    </div>
+                    <div className="admin-collection-row__actions">
+                      <button
+                        type="button"
+                        className="admin-button admin-button--ghost admin-button--small"
+                        onClick={() => void toggleCollection(collection)}
+                      >
+                        {collection.is_published ? "Unpublish" : "Publish"}
+                      </button>
+                      <button
+                        type="button"
+                        className="admin-button admin-button--danger admin-button--small"
+                        onClick={() => setCollectionDeleteTarget(collection)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
+        ) : null}
+      </section>
+
+      {selectedIds.length > 0 ? (
+        <div className="admin-selection-bar" role="status">
+          <span className="admin-selection-bar__count">
+            {selectedIds.length} selected
+          </span>
+          <button
+            type="button"
+            className="admin-button admin-button--ghost admin-button--small"
+            onClick={() => void bulkUpdate(true)}
+          >
+            Publish
+          </button>
+          <button
+            type="button"
+            className="admin-button admin-button--ghost admin-button--small"
+            onClick={() => void bulkUpdate(false)}
+          >
+            Unpublish
+          </button>
+          <button
+            type="button"
+            className="admin-button admin-button--danger admin-button--small"
+            onClick={() =>
+              requestDelete(
+                images.filter((image) => selectedIds.includes(image.id))
+              )
+            }
+          >
+            Delete
+          </button>
+          <button
+            type="button"
+            className="admin-button admin-button--ghost admin-button--small"
+            onClick={clearSelection}
+          >
+            Clear
+          </button>
         </div>
+      ) : null}
+
+      {loading ? (
+        <AdminLoading label="Loading gallery…" />
+      ) : filtered.length === 0 ? (
+        <AdminEmptyState
+          icon={<ImageIcon width={34} height={34} aria-hidden="true" />}
+          title={images.length === 0 ? "No images yet" : "No images match"}
+          text={
+            images.length === 0
+              ? "Upload your first image to start curating the public gallery."
+              : "Try a different search term or filter."
+          }
+          action={
+            images.length === 0 ? (
+              <button
+                type="button"
+                className="admin-button admin-button--primary"
+                onClick={() => setUploadOpen(true)}
+              >
+                <PlusIcon width={16} height={16} />
+                Upload images
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="admin-button admin-button--ghost"
+                onClick={() => {
+                  setSearch("");
+                  setStatusFilter("all");
+                  setCollectionFilter("all");
+                  setVisibleCount(PAGE_SIZE);
+                }}
+              >
+                Clear filters
+              </button>
+            )
+          }
+        />
+      ) : (
+        <>
+          <div className="admin-toolbar">
+            <label className="admin-checkbox">
+              <input
+                type="checkbox"
+                checked={allVisibleSelected}
+                onChange={(event) => {
+                  if (event.target.checked) {
+                    setSelectedIds((current) =>
+                      Array.from(
+                        new Set([...current, ...visible.map((image) => image.id)])
+                      )
+                    );
+                  } else {
+                    const visibleIds = new Set(visible.map((image) => image.id));
+                    setSelectedIds((current) =>
+                      current.filter((id) => !visibleIds.has(id))
+                    );
+                  }
+                }}
+              />
+              Select all shown
+            </label>
+            <span className="admin-toolbar__count">
+              Showing {visible.length} of {filtered.length}
+            </span>
+          </div>
+
+          <div className="admin-gallery-grid" aria-label="Gallery images">
+            {visible.map((image) => (
+              <GalleryCard
+                key={image.id}
+                image={image}
+                selected={selectedIds.includes(image.id)}
+                onSelectChange={(selected) =>
+                  toggleSelected(image.id, selected)
+                }
+                onEdit={() => setEditorId(image.id)}
+                onTogglePublish={() => void togglePublish(image)}
+                onCopyUrl={() => void copyUrl(image)}
+                onDelete={() => requestDelete([image])}
+              />
+            ))}
+          </div>
+
+          {visible.length < filtered.length ? (
+            <div className="admin-load-more">
+              <button
+                type="button"
+                className="admin-button admin-button--ghost"
+                onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
+              >
+                Load more ({filtered.length - visible.length} remaining)
+              </button>
+            </div>
+          ) : null}
+        </>
       )}
+
+      <UploadDialog
+        open={uploadOpen}
+        collections={collections}
+        defaults={uploadDefaults}
+        onClose={() => setUploadOpen(false)}
+        onComplete={() => {
+          void load();
+          push("Upload complete.", "success");
+        }}
+      />
+
+      {editorImage ? (
+        <GalleryEditor
+          key={editorImage.id}
+          image={editorImage}
+          collections={collections}
+          usage={usageMap[editorImage.id] ?? []}
+          onClose={() => setEditorId(null)}
+          onSaved={() => {
+            setEditorId(null);
+            push("Image details saved.", "success");
+            void load();
+          }}
+          onDelete={() => {
+            setEditorId(null);
+            requestDelete([editorImage]);
+          }}
+        />
+      ) : null}
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete image"
+        description={
+          deleteTarget ? (
+            <>
+              <p className="admin-confirm-text">
+                Delete <strong>{deleteTarget.title}</strong>? This removes the
+                database record and the stored file. This cannot be undone.
+              </p>
+              {deleteTarget.ids.length > 1 ? (
+                <p className="admin-confirm-text">
+                  All selected images are unused by projects.
+                </p>
+              ) : null}
+            </>
+          ) : null
+        }
+        confirmLabel="Delete"
+        busy={deleting}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={Boolean(collectionDeleteTarget)}
+        title="Delete collection"
+        description={
+          collectionDeleteTarget ? (
+            <p className="admin-confirm-text">
+              Delete <strong>{collectionDeleteTarget.name}</strong>? Images stay
+              in the library and become unassigned. This cannot be undone.
+            </p>
+          ) : null
+        }
+        confirmLabel="Delete"
+        busy={deletingCollection}
+        onConfirm={() => void confirmDeleteCollection()}
+        onCancel={() => setCollectionDeleteTarget(null)}
+      />
     </div>
+  );
+}
+
+export default function GalleryPage() {
+  return (
+    <Suspense fallback={<AdminLoading label="Loading gallery…" />}>
+      <GalleryManager />
+    </Suspense>
   );
 }

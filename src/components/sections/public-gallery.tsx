@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import Link from "next/link";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/ui/icons";
 
-interface PublicImage {
+export interface PublicImage {
   id: string;
   public_url: string;
   title: string;
@@ -16,57 +16,25 @@ interface PublicImage {
   height?: number | null;
 }
 
-interface PublicCollection {
+export interface PublicCollection {
   id: string;
   name: string;
 }
 
-export function PublicGallery() {
-  const [images, setImages] = useState<PublicImage[]>([]);
-  const [collections, setCollections] = useState<PublicCollection[]>([]);
+interface PublicGalleryProps {
+  initialImages: PublicImage[];
+  initialCollections: PublicCollection[];
+}
+
+export function PublicGallery({
+  initialImages,
+  initialCollections,
+}: PublicGalleryProps) {
   const [activeCollection, setActiveCollection] = useState<string>("all");
-  const [loading, setLoading] = useState(true);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  useEffect(() => {
-    let ignore = false;
-    const load = async () => {
-      try {
-        const supabase = createSupabaseBrowserClient();
-
-        const [{ data: imageData }, { data: collectionData }] = await Promise.all([
-          supabase
-            .from("gallery_images")
-            .select("id,public_url,title,alt_text,caption,categories,collection_id,width,height")
-            .eq("is_published", true)
-            .order("sort_order", { ascending: true })
-            .order("created_at", { ascending: false }),
-          supabase
-            .from("gallery_collections")
-            .select("id,name")
-            .eq("is_published", true)
-            .order("sort_order", { ascending: true })
-            .order("name", { ascending: true }),
-        ]);
-
-        if (!ignore) {
-          setImages(imageData ?? []);
-          setCollections(collectionData ?? []);
-        }
-      } catch (err: unknown) {
-        if (!ignore) {
-          console.error("Failed to load gallery:", err);
-          setImages([]);
-        }
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    };
-    load();
-    return () => {
-      ignore = true;
-    };
-  }, []);
+  const images = initialImages;
+  const collections = initialCollections;
 
   const visibleImages =
     activeCollection === "all"
@@ -110,14 +78,6 @@ export function PublicGallery() {
       document.body.style.overflow = previousOverflow;
     };
   }, [lightboxIndex, closeLightbox, step]);
-
-  if (loading) {
-    return (
-      <div className="gallery-empty" role="status">
-        <p>Loading gallery…</p>
-      </div>
-    );
-  }
 
   if (images.length === 0) {
     return (
@@ -179,6 +139,7 @@ export function PublicGallery() {
                 width={image.width ?? undefined}
                 height={image.height ?? undefined}
                 loading="lazy"
+                decoding="async"
                 style={{ width: "100%", height: "100%" }}
               />
             </div>
@@ -245,9 +206,19 @@ export function PublicGallery() {
           >
             <ChevronRightIcon width={22} height={22} />
           </button>
-          <div className="gallery-lightbox__caption">
+          <div
+            className="gallery-lightbox__caption"
+            onClick={(event) => event.stopPropagation()}
+          >
             <h3>{activeImage.title}</h3>
             {activeImage.caption && <p>{activeImage.caption}</p>}
+            <Link
+              href={`/gallery/${activeImage.id}/`}
+              className="gallery-lightbox__meta"
+              style={{ textDecoration: "underline" }}
+            >
+              View image details
+            </Link>
           </div>
         </div>
       )}

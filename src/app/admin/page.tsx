@@ -1,316 +1,393 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   ArrowUpRight,
   FolderIcon,
   ImageIcon,
-  FileTextIcon,
-  TrendingUpIcon,
-  PlusIcon,
+  ImagePlusIcon,
+  LayoutDashboardIcon,
+  RefreshIcon,
   SettingsIcon,
+  UploadIcon,
 } from "@/components/ui/icons";
+import {
+  AdminAlert,
+  AdminBadge,
+  AdminLoading,
+  AdminPageHeader,
+} from "@/components/admin/ui/AdminUi";
+import { formatDate } from "@/lib/admin/format";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-interface MetricCardProps {
+interface RecentProject {
+  id: string;
   title: string;
-  value: number | string;
-  icon: React.ReactNode;
-  href: string;
-  description?: string;
-  trend?: string;
+  published_at: string | null;
+  updated_at: string;
 }
 
-function MetricCard({ title, value, icon, href, description, trend }: MetricCardProps) {
-  return (
-    <Link href={href} className="admin-metric-card" style={{ textDecoration: "none" }}>
-      <div className="admin-metric-icon" aria-hidden="true">{icon}</div>
-      <div className="admin-metric-content">
-        <p className="admin-metric-title">{title}</p>
-        <p className="admin-metric-value">{value}</p>
-        {description && <p className="admin-metric-desc">{description}</p>}
-        {trend && <p className="admin-metric-trend">{trend}</p>}
-      </div>
-      <ArrowUpRight width={20} height={20} className="admin-metric-arrow" />
-    </Link>
-  );
+interface RecentImage {
+  id: string;
+  title: string;
+  public_url: string | null;
+  is_published: boolean;
+  created_at: string;
 }
+
+interface Metrics {
+  projectsTotal: number;
+  projectsPublished: number;
+  projectsDraft: number;
+  imagesTotal: number;
+  imagesPublished: number;
+  imagesDraft: number;
+}
+
+const EMPTY_METRICS: Metrics = {
+  projectsTotal: 0,
+  projectsPublished: 0,
+  projectsDraft: 0,
+  imagesTotal: 0,
+  imagesPublished: 0,
+  imagesDraft: 0,
+};
 
 export default function AdminDashboard() {
-  const [metrics, setMetrics] = useState({
-    projectsPublished: 0,
-    projectsDraft: 0,
-    galleryImages: 0,
-    galleryPublished: 0,
-  });
+  const [metrics, setMetrics] = useState<Metrics>(EMPTY_METRICS);
+  const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
+  const [recentImages, setRecentImages] = useState<RecentImage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const supabase = createSupabaseBrowserClient();
+  const load = useCallback(async () => {
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const [
+        projectsResult,
+        imagesResult,
+        projectsTotal,
+        projectsPublished,
+        imagesTotal,
+        imagesPublished,
+      ] = await Promise.all([
+        supabase
+          .from("projects")
+          .select("id,title,published_at,updated_at")
+          .order("updated_at", { ascending: false })
+          .limit(5),
+        supabase
+          .from("gallery_images")
+          .select("id,title,public_url,is_published,created_at")
+          .order("created_at", { ascending: false })
+          .limit(5),
+        supabase
+          .from("projects")
+          .select("*", { count: "exact", head: true }),
+        supabase
+          .from("projects")
+          .select("*", { count: "exact", head: true })
+          .not("published_at", "is", null),
+        supabase
+          .from("gallery_images")
+          .select("*", { count: "exact", head: true }),
+        supabase
+          .from("gallery_images")
+          .select("*", { count: "exact", head: true })
+          .eq("is_published", true),
+      ]);
 
-    const fetchMetrics = async () => {
-      try {
-        const [{ count: projectsPublished }, { count: projectsDraft }, { count: galleryImages }, { count: galleryPublished }] = await Promise.all([
-          supabase.from("projects").select("*", { count: "exact", head: true }).not("published_at", "is", null),
-          supabase.from("projects").select("*", { count: "exact", head: true }).is("published_at", null),
-          supabase.from("gallery_images").select("*", { count: "exact", head: true }),
-          supabase.from("gallery_images").select("*", { count: "exact", head: true }).eq("is_published", true),
-        ]);
+      const firstError =
+        projectsResult.error ??
+        imagesResult.error ??
+        projectsTotal.error ??
+        projectsPublished.error ??
+        imagesTotal.error ??
+        imagesPublished.error;
 
-        setMetrics({
-          projectsPublished: projectsPublished || 0,
-          projectsDraft: projectsDraft || 0,
-          galleryImages: galleryImages || 0,
-          galleryPublished: galleryPublished || 0,
-        });
-      } catch (err) {
-        console.error("Failed to fetch metrics:", err);
-      }
-    };
+      if (firstError) throw firstError;
 
-    fetchMetrics();
+      const totalProjects = projectsTotal.count ?? 0;
+      const publishedProjects = projectsPublished.count ?? 0;
+      const totalImages = imagesTotal.count ?? 0;
+      const publishedImages = imagesPublished.count ?? 0;
+
+      setMetrics({
+        projectsTotal: totalProjects,
+        projectsPublished: publishedProjects,
+        projectsDraft: Math.max(totalProjects - publishedProjects, 0),
+        imagesTotal: totalImages,
+        imagesPublished: publishedImages,
+        imagesDraft: Math.max(totalImages - publishedImages, 0),
+      });
+      setRecentProjects((projectsResult.data as RecentProject[]) ?? []);
+      setRecentImages((imagesResult.data as RecentImage[]) ?? []);
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Could not load the dashboard."
+      );
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch resolves asynchronously
+    void load();
+  }, [load]);
+
   return (
-    <div className="admin-dashboard">
-      <div className="admin-dashboard-header">
-        <div>
-          <h1 className="admin-dashboard-title">Dashboard</h1>
-          <p className="admin-dashboard-subtitle">Welcome back. Here&apos;s what&apos;s happening with your portfolio.</p>
-        </div>
-        <div className="admin-dashboard-actions">
-          <Link href="/admin/projects/new" className="button button--primary">
-            <PlusIcon width={16} height={16} />
-            New Project
-          </Link>
-          <Link href="/admin/gallery/upload" className="button button--ghost">
-            <ImageIcon width={16} height={16} />
-            Upload Images
-          </Link>
-        </div>
-      </div>
-
-      <div className="admin-metrics-grid" role="list" aria-label="Portfolio metrics">
-        <MetricCard
-          title="Published Projects"
-          value={metrics.projectsPublished}
-          icon={<FolderIcon width={24} height={24} />}
-          href="/admin/projects"
-          description={metrics.projectsDraft > 0 ? `${metrics.projectsDraft} draft${metrics.projectsDraft !== 1 ? "s" : ""} in progress` : "All projects published"}
-        />
-        <MetricCard
-          title="Gallery Images"
-          value={metrics.galleryImages}
-          icon={<ImageIcon width={24} height={24} />}
-          href="/admin/gallery"
-          description={metrics.galleryPublished > 0 ? `${metrics.galleryPublished} published` : "No images published yet"}
-        />
-        <MetricCard
-          title="Draft Projects"
-          value={metrics.projectsDraft}
-          icon={<FileTextIcon width={24} height={24} />}
-          href="/admin/projects?status=draft"
-          description="Works in progress"
-        />
-        <MetricCard
-          title="Published Gallery"
-          value={metrics.galleryPublished}
-          icon={<TrendingUpIcon width={24} height={24} />}
-          href="/admin/gallery?status=published"
-          description="Live on your portfolio"
-        />
-      </div>
-
-      <div className="admin-quick-links" role="list" aria-label="Quick actions">
-        <Link href="/admin/projects" className="admin-quick-link">
-          <FolderIcon width={24} height={24} />
-          <span>Manage Projects</span>
-          <ArrowUpRight width={16} height={16} />
-        </Link>
-        <Link href="/admin/gallery" className="admin-quick-link">
-          <ImageIcon width={24} height={24} />
-          <span>Manage Gallery</span>
-          <ArrowUpRight width={16} height={16} />
-        </Link>
-        <Link href="/admin/media" className="admin-quick-link">
-          <FileTextIcon width={24} height={24} />
-          <span>Media Library</span>
-          <ArrowUpRight width={16} height={16} />
-        </Link>
-        <Link href="/admin/settings" className="admin-quick-link">
-          <SettingsIcon width={24} height={24} />
-          <span>Site Settings</span>
-          <ArrowUpRight width={16} height={16} />
-        </Link>
-      </div>
-
-      <style jsx>{`
-        .admin-dashboard {
-          max-width: 100%;
+    <div className="admin-page">
+      <AdminPageHeader
+        eyebrow="Studio overview"
+        title="Dashboard"
+        description="A live view of what is in the studio, what is published, and what needs attention."
+        actions={
+          <>
+            <button
+              type="button"
+              className="admin-button admin-button--ghost"
+              onClick={() => {
+                setLoading(true);
+                setError(null);
+                void load();
+              }}
+              disabled={loading}
+            >
+              <RefreshIcon width={16} height={16} />
+              Refresh
+            </button>
+            <Link
+              href="/admin/projects?create=1"
+              className="admin-button admin-button--primary"
+            >
+              <FolderIcon width={16} height={16} />
+              New project
+            </Link>
+          </>
         }
+      />
 
-        .admin-dashboard-header {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 1.5rem;
-          margin-bottom: 2.5rem;
-          flex-wrap: wrap;
-        }
+      {error ? (
+        <AdminAlert tone="error">
+          {error}{" "}
+          <button
+            type="button"
+            className="admin-button admin-button--ghost admin-button--small"
+            onClick={() => {
+              setLoading(true);
+              setError(null);
+              void load();
+            }}
+          >
+            Retry
+          </button>
+        </AdminAlert>
+      ) : null}
 
-        .admin-dashboard-title {
-          font-size: clamp(1.75rem, 3vw, 2.25rem);
-          font-weight: 500;
-          letter-spacing: -0.02em;
-          margin: 0 0 0.5rem;
-        }
+      {loading ? (
+        <AdminLoading label="Loading studio overview…" />
+      ) : (
+        <>
+          <div className="admin-metrics" role="list" aria-label="Studio metrics">
+            <Link href="/admin/projects" className="admin-metric" role="listitem">
+              <div className="admin-metric__head">
+                <span className="admin-metric__icon" aria-hidden="true">
+                  <FolderIcon width={18} height={18} />
+                </span>
+                <ArrowUpRight width={16} height={16} aria-hidden="true" />
+              </div>
+              <p className="admin-metric__label">Projects</p>
+              <p className="admin-metric__value">{metrics.projectsTotal}</p>
+              <p className="admin-metric__note">
+                {metrics.projectsPublished} published · {metrics.projectsDraft}{" "}
+                draft
+              </p>
+            </Link>
 
-        .admin-dashboard-subtitle {
-          color: var(--ink-soft);
-          font-size: 1rem;
-          margin: 0;
-        }
+            <Link
+              href="/admin/projects?status=published"
+              className="admin-metric"
+              role="listitem"
+            >
+              <div className="admin-metric__head">
+                <span className="admin-metric__icon" aria-hidden="true">
+                  <LayoutDashboardIcon width={18} height={18} />
+                </span>
+                <ArrowUpRight width={16} height={16} aria-hidden="true" />
+              </div>
+              <p className="admin-metric__label">Published projects</p>
+              <p className="admin-metric__value">{metrics.projectsPublished}</p>
+              <p className="admin-metric__note">Visible in the public work index</p>
+            </Link>
 
-        .admin-dashboard-actions {
-          display: flex;
-          gap: 0.75rem;
-          flex-wrap: wrap;
-        }
+            <Link href="/admin/gallery" className="admin-metric" role="listitem">
+              <div className="admin-metric__head">
+                <span className="admin-metric__icon" aria-hidden="true">
+                  <ImageIcon width={18} height={18} />
+                </span>
+                <ArrowUpRight width={16} height={16} aria-hidden="true" />
+              </div>
+              <p className="admin-metric__label">Gallery images</p>
+              <p className="admin-metric__value">{metrics.imagesTotal}</p>
+              <p className="admin-metric__note">
+                {metrics.imagesPublished} published · {metrics.imagesDraft} draft
+              </p>
+            </Link>
 
-        .admin-metrics-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: 1rem;
-          margin-bottom: 3rem;
-        }
+            <Link
+              href="/admin/gallery?status=published"
+              className="admin-metric"
+              role="listitem"
+            >
+              <div className="admin-metric__head">
+                <span className="admin-metric__icon" aria-hidden="true">
+                  <ImagePlusIcon width={18} height={18} />
+                </span>
+                <ArrowUpRight width={16} height={16} aria-hidden="true" />
+              </div>
+              <p className="admin-metric__label">Published gallery</p>
+              <p className="admin-metric__value">{metrics.imagesPublished}</p>
+              <p className="admin-metric__note">Live on the public gallery</p>
+            </Link>
+          </div>
 
-        .admin-metric-card {
-          display: grid;
-          grid-template-columns: auto 1fr auto;
-          align-items: center;
-          gap: 1rem;
-          padding: 1.25rem 1.5rem;
-          border: 1px solid var(--line);
-          border-radius: var(--radius-lg);
-          background: var(--paper-soft);
-          color: var(--ink);
-          transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
-        }
+          <div className="admin-dashboard-grid">
+            <section className="admin-card" aria-labelledby="recent-images-title">
+              <div className="admin-card__head">
+                <h2 className="admin-card__title" id="recent-images-title">
+                  Recent uploads
+                </h2>
+                <Link
+                  href="/admin/gallery"
+                  className="admin-button admin-button--ghost admin-button--small"
+                >
+                  View gallery
+                </Link>
+              </div>
+              {recentImages.length === 0 ? (
+                <p className="admin-empty__text">
+                  No images yet. Upload your first image to start the gallery.
+                </p>
+              ) : (
+                <ul className="admin-recent-list">
+                  {recentImages.map((image) => (
+                    <li key={image.id}>
+                      <Link
+                        href={`/admin/gallery?image=${image.id}`}
+                        className="admin-recent"
+                      >
+                        <span className="admin-recent__thumb">
+                          {image.public_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- remote Supabase asset, unoptimized in static export
+                            <img src={image.public_url} alt="" loading="lazy" />
+                          ) : null}
+                        </span>
+                        <span className="admin-recent__body">
+                          <span className="admin-recent__title">
+                            {image.title}
+                          </span>
+                          <span className="admin-recent__meta">
+                            {formatDate(image.created_at)}
+                          </span>
+                        </span>
+                        <AdminBadge
+                          tone={image.is_published ? "published" : "draft"}
+                        >
+                          {image.is_published ? "Published" : "Draft"}
+                        </AdminBadge>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
 
-        .admin-metric-card:hover {
-          border-color: var(--line-strong);
-          box-shadow: var(--shadow-card);
-          transform: translateY(-1px);
-        }
+            <section className="admin-card" aria-labelledby="recent-projects-title">
+              <div className="admin-card__head">
+                <h2 className="admin-card__title" id="recent-projects-title">
+                  Recently updated projects
+                </h2>
+                <Link
+                  href="/admin/projects"
+                  className="admin-button admin-button--ghost admin-button--small"
+                >
+                  View projects
+                </Link>
+              </div>
+              {recentProjects.length === 0 ? (
+                <p className="admin-empty__text">
+                  No projects yet. Create one to build the public work index.
+                </p>
+              ) : (
+                <ul className="admin-recent-list">
+                  {recentProjects.map((project) => (
+                    <li key={project.id}>
+                      <Link
+                        href={`/admin/projects?edit=${project.id}`}
+                        className="admin-recent"
+                      >
+                        <span className="admin-recent__thumb" aria-hidden="true">
+                          <span className="admin-recent__meta">AS</span>
+                        </span>
+                        <span className="admin-recent__body">
+                          <span className="admin-recent__title">
+                            {project.title}
+                          </span>
+                          <span className="admin-recent__meta">
+                            Updated {formatDate(project.updated_at)}
+                          </span>
+                        </span>
+                        <AdminBadge
+                          tone={project.published_at ? "published" : "draft"}
+                        >
+                          {project.published_at ? "Published" : "Draft"}
+                        </AdminBadge>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
 
-        .admin-metric-icon {
-          display: grid;
-          place-items: center;
-          width: 3rem;
-          height: 3rem;
-          border-radius: var(--radius-md);
-          background: var(--accent-soft);
-          color: var(--accent);
-        }
-
-        .admin-metric-content {
-          display: grid;
-          gap: 0.25rem;
-          min-width: 0;
-        }
-
-        .admin-metric-title {
-          margin: 0;
-          color: var(--muted);
-          font-family: var(--font-jetbrains), ui-monospace, monospace;
-          font-size: 0.62rem;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
-
-        .admin-metric-value {
-          margin: 0;
-          font-size: clamp(1.75rem, 3vw, 2.5rem);
-          font-weight: 500;
-          line-height: 1.1;
-          font-family: var(--font-outfit), sans-serif;
-        }
-
-        .admin-metric-desc {
-          margin: 0;
-          color: var(--ink-soft);
-          font-size: 0.8rem;
-        }
-
-        .admin-metric-trend {
-          margin: 0;
-          color: var(--success);
-          font-size: 0.75rem;
-          font-family: var(--font-jetbrains), ui-monospace, monospace;
-        }
-
-        .admin-metric-arrow {
-          color: var(--muted);
-          transition: transform 150ms ease, color 150ms ease;
-        }
-
-        .admin-metric-card:hover .admin-metric-arrow {
-          transform: translate(2px, -2px);
-          color: var(--accent);
-        }
-
-        .admin-quick-links {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: 1rem;
-        }
-
-        .admin-quick-link {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 1.5rem;
-          border: 1px solid var(--line);
-          border-radius: var(--radius-lg);
-          background: var(--paper-soft);
-          color: var(--ink);
-          text-decoration: none;
-          text-align: center;
-          transition: all 150ms ease;
-        }
-
-        .admin-quick-link:hover {
-          border-color: var(--line-strong);
-          background: var(--paper);
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-card);
-        }
-
-        .admin-quick-link svg {
-          color: var(--muted);
-          transition: color 150ms ease;
-        }
-
-        .admin-quick-link:hover svg {
-          color: var(--accent);
-        }
-
-        .admin-quick-link span {
-          font-weight: 500;
-          font-size: 0.95rem;
-        }
-
-        @media (max-width: 48rem) {
-          .admin-dashboard-header {
-            flex-direction: column;
-            align-items: stretch;
-          }
-          .admin-dashboard-actions {
-            justify-content: flex-start;
-          }
-        }
-      `}</style>
+          <section className="admin-card" aria-labelledby="quick-actions-title">
+            <div className="admin-card__head">
+              <h2 className="admin-card__title" id="quick-actions-title">
+                Quick actions
+              </h2>
+              <span className="admin-card__meta">Studio shortcuts</span>
+            </div>
+            <div className="admin-quick-actions">
+              <Link
+                href="/admin/projects?create=1"
+                className="admin-quick-action"
+              >
+                <FolderIcon width={20} height={20} aria-hidden="true" />
+                <span>New project</span>
+              </Link>
+              <Link
+                href="/admin/gallery?upload=1"
+                className="admin-quick-action"
+              >
+                <UploadIcon width={20} height={20} aria-hidden="true" />
+                <span>Upload images</span>
+              </Link>
+              <Link href="/admin/media" className="admin-quick-action">
+                <ImageIcon width={20} height={20} aria-hidden="true" />
+                <span>Media library</span>
+              </Link>
+              <Link href="/admin/settings" className="admin-quick-action">
+                <SettingsIcon width={20} height={20} aria-hidden="true" />
+                <span>Site settings</span>
+              </Link>
+            </div>
+          </section>
+        </>
+      )}
     </div>
   );
 }

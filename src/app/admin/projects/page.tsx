@@ -1,252 +1,477 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import {
+  EditIcon,
+  FolderIcon,
+  PlusIcon,
+  RefreshIcon,
+  SearchIcon,
+  StarIcon,
+  TrashIcon,
+} from "@/components/ui/icons";
+import {
+  AdminAlert,
+  AdminBadge,
+  AdminEmptyState,
+  AdminLoading,
+  AdminPageHeader,
+  useAdminToast,
+} from "@/components/admin/ui/AdminUi";
+import { ConfirmDialog } from "@/components/admin/ui/ConfirmDialog";
+import { ProjectFormModal } from "@/components/admin/ProjectFormModal";
+import { formatDate } from "@/lib/admin/format";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { PlusIcon, TrashIcon, EditIcon, FolderIcon, FilterIcon, SearchIcon } from "@/components/ui/icons";
-import { ProjectFormModal, type ProjectRecord } from "@/components/admin/ProjectFormModal";
+import type {
+  GalleryImage,
+  ProjectRecord,
+} from "@/lib/admin/types";
 
-export default function ProjectManager() {
+type SortMode = "manual" | "newest" | "title";
+
+function ProjectManager() {
+  const searchParams = useSearchParams();
+  const { push } = useAdminToast();
+
   const [projects, setProjects] = useState<ProjectRecord[]>([]);
+  const [assets, setAssets] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [showForm, setShowForm] = useState(false);
-  const [editingProject, setEditingProject] = useState<ProjectRecord | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState(
+    searchParams.get("status") === "published"
+      ? "published"
+      : searchParams.get("status") === "draft"
+        ? "draft"
+        : "all"
+  );
+  const [featuredFilter, setFeaturedFilter] = useState("all");
+  const [sortMode, setSortMode] = useState<SortMode>("manual");
+  const [formOpen, setFormOpen] = useState(searchParams.get("create") === "1");
+  const [editingId, setEditingId] = useState<string | null>(
+    searchParams.get("edit")
+  );
+  const [deleteTarget, setDeleteTarget] = useState<ProjectRecord | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const fetchProjects = useCallback(async () => {
-    setLoading(true);
+  const assetMap = useMemo(() => {
+    const map = new Map<string, GalleryImage>();
+    for (const asset of assets) map.set(asset.id, asset);
+    return map;
+  }, [assets]);
+
+  const load = useCallback(async () => {
     try {
       const supabase = createSupabaseBrowserClient();
-      let query = supabase.from("projects").select("*").order("sort_order", { ascending: true });
+      const [projectsResult, assetsResult] = await Promise.all([
+        supabase
+          .from("projects")
+          .select("*")
+          .order("sort_order", { ascending: true })
+          .order("updated_at", { ascending: false }),
+        supabase
+          .from("gallery_images")
+          .select("*")
+          .order("created_at", { ascending: false }),
+      ]);
 
-      if (statusFilter === "published") {
-        query = query.not("published_at", "is", null);
-      } else if (statusFilter === "draft") {
-        query = query.is("published_at", null);
-      }
+      const firstError = projectsResult.error ?? assetsResult.error;
+      if (firstError) throw firstError;
 
-      const { data, error: err } = await query;
-      if (err) throw err;
-      setProjects(data ?? []);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to load projects");
+      setProjects((projectsResult.data as ProjectRecord[]) ?? []);
+      setAssets((assetsResult.data as GalleryImage[]) ?? []);
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Could not load projects."
+      );
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, []);
 
   useEffect(() => {
-    let ignore = false;
-    const load = async () => {
-      try {
-        const supabase = createSupabaseBrowserClient();
-        let query = supabase
-          .from("projects")
-          .select("*")
-          .order("sort_order", { ascending: true });
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch resolves asynchronously
+    void load();
+  }, [load]);
 
-        if (statusFilter === "published") {
-          query = query.not("published_at", "is", null);
-        } else if (statusFilter === "draft") {
-          query = query.is("published_at", null);
-        }
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const result = projects.filter((project) => {
+      const matchesSearch =
+        !query ||
+        project.title.toLowerCase().includes(query) ||
+        project.tagline.toLowerCase().includes(query) ||
+        project.category.toLowerCase().includes(query);
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "published" && project.published_at !== null) ||
+        (statusFilter === "draft" && project.published_at === null);
+      const matchesFeatured =
+        featuredFilter === "all" ||
+        (featuredFilter === "featured" && project.featured) ||
+        (featuredFilter === "standard" && !project.featured);
+      return matchesSearch && matchesStatus && matchesFeatured;
+    });
 
-        const { data, error: err } = await query;
-        if (err) throw err;
-        if (!ignore) setProjects(data ?? []);
-      } catch (err: unknown) {
-        if (!ignore) {
-          setError(err instanceof Error ? err.message : "Failed to load projects");
-        }
-      } finally {
-        if (!ignore) setLoading(false);
+    return [...result].sort((a, b) => {
+      if (sortMode === "newest") {
+        return (
+          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        );
       }
-    };
-    load();
-    return () => {
-      ignore = true;
-    };
-  }, [statusFilter]);
-
-  const filteredProjects = projects.filter((p) => {
-    const matchesSearch =
-      p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.tagline.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" ||
-      (statusFilter === "published" && p.published_at !== null) ||
-      (statusFilter === "draft" && p.published_at === null);
-    return matchesSearch && matchesStatus;
-  });
-
-  const handlePublish = async (id: string, publish: boolean) => {
-    try {
-      const supabase = createSupabaseBrowserClient();
-      const { error } = await supabase
-        .from("projects")
-        .update({ published_at: publish ? new Date().toISOString() : null })
-        .eq("id", id);
-
-      if (error) {
-        setError(error.message);
-        return;
+      if (sortMode === "title") {
+        return a.title.localeCompare(b.title);
       }
-      fetchProjects();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to update");
-    }
+      return (
+        (a.sort_order ?? 0) - (b.sort_order ?? 0) ||
+        a.title.localeCompare(b.title)
+      );
+    });
+  }, [projects, search, statusFilter, featuredFilter, sortMode]);
+
+  const editingProject = editingId
+    ? projects.find((project) => project.id === editingId) ?? null
+    : null;
+
+  const openCreate = () => {
+    setEditingId(null);
+    setFormOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this project?")) return;
-    try {
-      const supabase = createSupabaseBrowserClient();
-      const { error } = await supabase.from("projects").delete().eq("id", id);
-      if (error) {
-        setError(error.message);
-        return;
-      }
-      fetchProjects();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Delete failed");
-    }
+  const openEdit = (project: ProjectRecord) => {
+    setEditingId(project.id);
+    setFormOpen(true);
   };
 
-  const handleFeature = async (id: string, featured: boolean) => {
-    try {
-      const supabase = createSupabaseBrowserClient();
-      const { error } = await supabase
-        .from("projects")
-        .update({ featured })
-        .eq("id", id);
-      if (error) setError(error.message);
-      else fetchProjects();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to update");
+  const closeForm = () => {
+    setFormOpen(false);
+    setEditingId(null);
+  };
+
+  const togglePublish = async (project: ProjectRecord) => {
+    const supabase = createSupabaseBrowserClient();
+    const { error: updateError } = await supabase
+      .from("projects")
+      .update({
+        published_at: project.published_at ? null : new Date().toISOString(),
+      })
+      .eq("id", project.id);
+
+    if (updateError) {
+      push(updateError.message, "error");
+      return;
     }
+    push(
+      project.published_at ? "Project unpublished." : "Project published.",
+      "success"
+    );
+    await load();
+  };
+
+  const toggleFeatured = async (project: ProjectRecord) => {
+    const supabase = createSupabaseBrowserClient();
+    const { error: updateError } = await supabase
+      .from("projects")
+      .update({ featured: !project.featured })
+      .eq("id", project.id);
+
+    if (updateError) {
+      push(updateError.message, "error");
+      return;
+    }
+    await load();
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const supabase = createSupabaseBrowserClient();
+    const { error: deleteError } = await supabase
+      .from("projects")
+      .delete()
+      .eq("id", deleteTarget.id);
+    setDeleting(false);
+
+    if (deleteError) {
+      push(deleteError.message, "error");
+      return;
+    }
+
+    setDeleteTarget(null);
+    if (editingId === deleteTarget.id) closeForm();
+    push("Project deleted.", "success");
+    await load();
   };
 
   return (
-    <div className="admin-project-manager">
-      <div className="admin-page-header">
-        <div className="admin-header-content">
-          <h1 className="admin-page-title">Projects</h1>
-          <p className="admin-page-subtitle">Manage your portfolio projects and case studies.</p>
-        </div>
-        <button
-          type="button"
-          className="button button--primary"
-          onClick={() => {
-            setEditingProject(null);
-            setShowForm(true);
-          }}
-        >
-          <PlusIcon width={16} height={16} />
-          New Project
-        </button>
-      </div>
+    <div className="admin-page">
+      <AdminPageHeader
+        eyebrow="Work index"
+        title="Projects"
+        description="Published projects replace the static portfolio content after the next build. Drafts stay private."
+        actions={
+          <>
+            <button
+              type="button"
+              className="admin-button admin-button--ghost"
+              onClick={() => {
+                setLoading(true);
+                setError(null);
+                void load();
+              }}
+              disabled={loading}
+            >
+              <RefreshIcon width={16} height={16} />
+              Refresh
+            </button>
+            <button
+              type="button"
+              className="admin-button admin-button--primary"
+              onClick={openCreate}
+            >
+              <PlusIcon width={16} height={16} />
+              New project
+            </button>
+          </>
+        }
+      />
 
-      {error && (
-        <div className="admin-error-banner" role="alert">{error}</div>
-      )}
+      {error ? (
+        <AdminAlert tone="error">
+          {error}{" "}
+          <button
+            type="button"
+            className="admin-button admin-button--ghost admin-button--small"
+            onClick={() => {
+              setLoading(true);
+              setError(null);
+              void load();
+            }}
+          >
+            Retry
+          </button>
+        </AdminAlert>
+      ) : null}
 
-      <div className="admin-project-toolbar">
-        <div className="admin-search-box">
-          <SearchIcon width={18} height={18} style={{ color: "var(--muted)", marginRight: "0.75rem" }} />
-          <input
-            type="text"
-            placeholder="Search projects..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="input"
-            style={{ paddingLeft: "2.5rem" }}
-          />
-        </div>
-        <div className="admin-filter-group">
-          <FilterIcon width={18} height={18} style={{ color: "var(--muted)", marginRight: "0.75rem" }} />
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="input">
-            <option value="all">All Projects</option>
+      <div className="admin-toolbar">
+        <div className="admin-toolbar__group">
+          <div className="admin-search">
+            <SearchIcon
+              width={17}
+              height={17}
+              className="admin-search__icon"
+              aria-hidden="true"
+            />
+            <input
+              type="search"
+              className="admin-input"
+              placeholder="Search projects…"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              aria-label="Search projects"
+            />
+          </div>
+          <select
+            className="admin-select admin-select--compact"
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+            aria-label="Filter by status"
+          >
+            <option value="all">All statuses</option>
             <option value="published">Published</option>
             <option value="draft">Drafts</option>
           </select>
+          <select
+            className="admin-select admin-select--compact"
+            value={featuredFilter}
+            onChange={(event) => setFeaturedFilter(event.target.value)}
+            aria-label="Filter by featured"
+          >
+            <option value="all">All projects</option>
+            <option value="featured">Featured</option>
+            <option value="standard">Not featured</option>
+          </select>
+          <select
+            className="admin-select admin-select--compact"
+            value={sortMode}
+            onChange={(event) => setSortMode(event.target.value as SortMode)}
+            aria-label="Sort projects"
+          >
+            <option value="manual">Manual order</option>
+            <option value="newest">Recently updated</option>
+            <option value="title">Title A–Z</option>
+          </select>
         </div>
+        <span className="admin-toolbar__count">
+          {filtered.length} of {projects.length} projects
+        </span>
       </div>
 
-      <div className="admin-projects-list" role="list" aria-label="Projects">
-        {loading && (
-          <div className="admin-loading">Loading projects...</div>
-        )}
-        {!loading && filteredProjects.length === 0 && (
-          <div className="admin-empty-state">
-            <FolderIcon width={48} height={48} style={{ color: "var(--muted)" }} />
-            <p>No projects found</p>
-          </div>
-        )}
-        {!loading && filteredProjects.map((project) => (
-          <div key={project.id} className="admin-project-row">
-            <div className="admin-project-info">
-              <div className="admin-project-avatar" aria-hidden="true">
-                {project.code ? project.code : project.title.charAt(0).toUpperCase()}
-              </div>
-              <div className="admin-project-details">
-                <h3 className="admin-project-title">{project.title}</h3>
-                <p className="admin-project-tagline">{project.tagline}</p>
-                <div className="admin-project-meta">
-                  <span className="admin-project-category">{project.category}</span>
-                  <span className="admin-project-status">{project.status}</span>
-                  <span className="admin-project-slug">/{project.slug}/</span>
-                </div>
-              </div>
-            </div>
-            <div className="admin-project-actions">
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingProject(project);
-                  setShowForm(true);
-                }}
-                className="admin-link-btn"
-                title="Edit project"
-              >
-                <EditIcon width={16} height={16} />
-              </button>
-              <button
-                onClick={() => handleFeature(project.id, !project.featured)}
-                className={`admin-link-btn ${project.featured ? "featured" : ""}`}
-                title={project.featured ? "Unfeature" : "Feature"}
-              >
-                <span style={{ fontWeight: 700, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  {project.featured ? "★" : "☆"}
-                </span>
-              </button>
-              <button
-                onClick={() => handlePublish(project.id, !project.published_at)}
-                className={`admin-link-btn ${project.published_at ? "published" : ""}`}
-                title={project.published_at ? "Unpublish" : "Publish"}
-              >
-                <span style={{ fontWeight: 700, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  {project.published_at ? "●" : "○"}
-                </span>
-              </button>
-              <button onClick={() => handleDelete(project.id)} className="admin-link-btn admin-link-btn--delete" title="Delete">
-                <TrashIcon width={16} height={16} />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {showForm && (
-        <ProjectFormModal
-          project={editingProject}
-          onClose={() => {
-            setShowForm(false);
-            setEditingProject(null);
-          }}
-          onSaved={fetchProjects}
+      {loading ? (
+        <AdminLoading label="Loading projects…" />
+      ) : filtered.length === 0 ? (
+        <AdminEmptyState
+          icon={<FolderIcon width={34} height={34} aria-hidden="true" />}
+          title={projects.length === 0 ? "No projects yet" : "No projects match"}
+          text={
+            projects.length === 0
+              ? "Create your first project to start replacing the static work index."
+              : "Try a different search term or filter."
+          }
+          action={
+            <button
+              type="button"
+              className="admin-button admin-button--primary"
+              onClick={openCreate}
+            >
+              <PlusIcon width={16} height={16} />
+              New project
+            </button>
+          }
         />
+      ) : (
+        <div className="admin-project-list" aria-label="Projects">
+          {filtered.map((project) => {
+            const cover = project.cover_image_id
+              ? assetMap.get(project.cover_image_id)
+              : null;
+            return (
+              <article className="admin-project-row" key={project.id}>
+                <div className="admin-project-main">
+                  <div className="admin-project-cover" aria-hidden="true">
+                    {cover?.public_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- remote Supabase asset, unoptimized in static export
+                      <img src={cover.public_url} alt="" loading="lazy" />
+                    ) : (
+                      project.code || project.title.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <div className="admin-project-info">
+                    <h3 className="admin-project-title">{project.title}</h3>
+                    <p className="admin-project-tagline">{project.tagline}</p>
+                    <div className="admin-project-meta">
+                      <AdminBadge
+                        tone={project.published_at ? "published" : "draft"}
+                      >
+                        {project.published_at ? "Published" : "Draft"}
+                      </AdminBadge>
+                      {project.featured ? (
+                        <AdminBadge tone="featured">Featured</AdminBadge>
+                      ) : null}
+                      <span className="admin-project-meta admin-toolbar__count">
+                        {project.category} · /{project.slug}/ · Updated{" "}
+                        {formatDate(project.updated_at)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="admin-project-actions">
+                  <button
+                    type="button"
+                    className={`admin-icon-button admin-icon-button--surface${
+                      project.featured ? " is-published" : ""
+                    }`}
+                    onClick={() => void toggleFeatured(project)}
+                    aria-label={
+                      project.featured
+                        ? `Remove ${project.title} from featured`
+                        : `Feature ${project.title}`
+                    }
+                    title={project.featured ? "Unfeature" : "Feature"}
+                  >
+                    <StarIcon width={15} height={15} />
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-icon-button admin-icon-button--surface"
+                    onClick={() => void togglePublish(project)}
+                    aria-label={
+                      project.published_at
+                        ? `Unpublish ${project.title}`
+                        : `Publish ${project.title}`
+                    }
+                    title={project.published_at ? "Unpublish" : "Publish"}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: "0.55rem",
+                        height: "0.55rem",
+                        borderRadius: "50%",
+                        background: project.published_at
+                          ? "var(--success)"
+                          : "var(--line-strong)",
+                      }}
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-icon-button admin-icon-button--surface"
+                    onClick={() => openEdit(project)}
+                    aria-label={`Edit ${project.title}`}
+                    title="Edit"
+                  >
+                    <EditIcon width={15} height={15} />
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-icon-button admin-icon-button--surface is-danger"
+                    onClick={() => setDeleteTarget(project)}
+                    aria-label={`Delete ${project.title}`}
+                    title="Delete"
+                  >
+                    <TrashIcon width={15} height={15} />
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       )}
+
+      {formOpen && (!editingId || editingProject) ? (
+        <ProjectFormModal
+          key={editingProject?.id ?? "new"}
+          project={editingProject}
+          assets={assets}
+          onClose={closeForm}
+          onSaved={() => {
+            push(
+              editingProject ? "Project saved." : "Project created.",
+              "success"
+            );
+            void load();
+          }}
+        />
+      ) : null}
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete project"
+        description={
+          deleteTarget ? (
+            <p className="admin-confirm-text">
+              Delete <strong>{deleteTarget.title}</strong>? The project record
+              will be removed. Media assets are kept in the library.
+            </p>
+          ) : null
+        }
+        confirmLabel="Delete"
+        busy={deleting}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
+  );
+}
+
+export default function ProjectsPage() {
+  return (
+    <Suspense fallback={<AdminLoading label="Loading projects…" />}>
+      <ProjectManager />
+    </Suspense>
   );
 }

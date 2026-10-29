@@ -1,7 +1,22 @@
+import type { Metadata } from "next";
+
 import { AdminAuthProvider } from "@/components/admin/AdminAuthProvider";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { AdminToastProvider } from "@/components/admin/ui/AdminUi";
 
 import "@/styles/admin.css";
+
+export const metadata: Metadata = {
+  title: {
+    default: "Aakif Studio",
+    template: "%s | Aakif Studio",
+  },
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+  },
+};
 
 export default function AdminLayoutWrapper({
   children,
@@ -10,7 +25,9 @@ export default function AdminLayoutWrapper({
 }) {
   return (
     <AdminAuthProvider>
-      <AdminLayout>{children}</AdminLayout>
+      <AdminToastProvider>
+        <AdminLayout>{children}</AdminLayout>
+      </AdminToastProvider>
     </AdminAuthProvider>
   );
 }

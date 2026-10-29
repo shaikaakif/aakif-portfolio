@@ -4,8 +4,9 @@ import { ContactSection } from "@/components/sections/contact-section";
 import { ArrowUpRight } from "@/components/ui/icons";
 import { SectionHead } from "@/components/ui/section-head";
 import { ProjectCard } from "@/components/work/project-card";
-import { experiments, projects } from "@/content/projects";
+import { experiments, projects as staticProjects } from "@/content/projects";
 import { seo, workSeo } from "@/content/seo";
+import { getPublishedProjects } from "@/lib/content/cms";
 
 export const metadata: Metadata = {
   title: workSeo.title,
@@ -22,8 +23,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function WorkPage() {
-  const liveCount = projects.filter((project) => project.status === "Live").length;
+export default async function WorkPage() {
+  const cmsProjects = await getPublishedProjects();
+  const projects = cmsProjects.length > 0 ? cmsProjects : staticProjects;
+  const liveCount = projects.filter(
+    (project) => project.status === "Live"
+  ).length;
 
   return (
     <>
@@ -35,9 +40,9 @@ export default function WorkPage() {
           </h1>
           <div className="page-hero__sub">
             <p>
-              Eleven products across AI, education, SaaS, computer vision,
-              developer tools, and enterprise software. Ten are live. One is an
-              enterprise case study.
+              {projects.length} products across AI, education, SaaS, computer
+              vision, developer tools, and enterprise software. {liveCount} are
+              live.
             </p>
             <p>
               Every project below starts with a friction worth removing — not a
