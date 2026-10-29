@@ -2,6 +2,8 @@
 
 import {
   EditIcon,
+  EyeIcon,
+  EyeOffIcon,
   ImageIcon,
   LinkIcon,
   TrashIcon,
@@ -66,53 +68,6 @@ export function GalleryCard({
             {image.is_published ? "Published" : "Draft"}
           </AdminBadge>
         </span>
-
-        <div className="admin-gallery-card__overlay">
-          <div className="admin-gallery-card__actions">
-            <button
-              type="button"
-              className="admin-icon-button"
-              onClick={onEdit}
-              aria-label={`Edit ${image.title}`}
-              title="Edit metadata"
-            >
-              <EditIcon width={16} height={16} />
-            </button>
-            <button
-              type="button"
-              className={`admin-icon-button${
-                image.is_published ? " is-published" : ""
-              }`}
-              onClick={onTogglePublish}
-              aria-label={
-                image.is_published
-                  ? `Unpublish ${image.title}`
-                  : `Publish ${image.title}`
-              }
-              title={image.is_published ? "Unpublish" : "Publish"}
-            >
-              <ImageIcon width={16} height={16} />
-            </button>
-            <button
-              type="button"
-              className="admin-icon-button"
-              onClick={onCopyUrl}
-              aria-label={`Copy URL for ${image.title}`}
-              title="Copy image URL"
-            >
-              <LinkIcon width={16} height={16} />
-            </button>
-            <button
-              type="button"
-              className="admin-icon-button is-danger"
-              onClick={onDelete}
-              aria-label={`Delete ${image.title}`}
-              title="Delete"
-            >
-              <TrashIcon width={16} height={16} />
-            </button>
-          </div>
-        </div>
       </div>
 
       <div className="admin-gallery-card__info">
@@ -127,6 +82,53 @@ export function GalleryCard({
             </span>
           ) : null}
           <span>{formatBytes(image.file_size_bytes)}</span>
+        </div>
+
+        <div className="admin-gallery-card__actions admin-gallery-card__actions--info">
+          <button
+            type="button"
+            className="admin-icon-button admin-icon-button--surface"
+            onClick={onEdit}
+            aria-label={`Edit ${image.title}`}
+            title="Edit metadata"
+          >
+            <EditIcon width={15} height={15} />
+          </button>
+          <button
+            type="button"
+            className="admin-icon-button admin-icon-button--surface"
+            onClick={onTogglePublish}
+            aria-label={
+              image.is_published
+                ? `Unpublish ${image.title}`
+                : `Publish ${image.title}`
+            }
+            title={image.is_published ? "Unpublish" : "Publish"}
+          >
+            {image.is_published ? (
+              <EyeOffIcon width={15} height={15} />
+            ) : (
+              <EyeIcon width={15} height={15} />
+            )}
+          </button>
+          <button
+            type="button"
+            className="admin-icon-button admin-icon-button--surface"
+            onClick={onCopyUrl}
+            aria-label={`Copy URL for ${image.title}`}
+            title="Copy image URL"
+          >
+            <LinkIcon width={15} height={15} />
+          </button>
+          <button
+            type="button"
+            className="admin-icon-button admin-icon-button--surface is-danger"
+            onClick={onDelete}
+            aria-label={`Delete ${image.title}`}
+            title="Delete"
+          >
+            <TrashIcon width={15} height={15} />
+          </button>
         </div>
       </div>
     </article>

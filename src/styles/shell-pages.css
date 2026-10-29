@@ -75,3 +75,96 @@
     text-transform: uppercase;
   }
 }
+
+@layer components {
+  .sitemap-grid {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  }
+
+  .sitemap-card {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--paper-soft);
+    padding: 1rem 1.1rem;
+    color: var(--ink);
+    text-decoration: none;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .sitemap-card:hover {
+    border-color: var(--line-strong);
+    box-shadow: var(--shadow-card);
+  }
+
+  .sitemap-card > span {
+    display: grid;
+    flex: 1;
+    gap: 0.2rem;
+  }
+
+  .sitemap-card strong {
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .sitemap-card small {
+    color: var(--muted);
+    font-size: 0.72rem;
+    line-height: 1.4;
+  }
+
+  .sitemap-columns {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  }
+
+  .sitemap-column h2 {
+    margin: 0 0 0.75rem;
+    font-family: var(--font-outfit), sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  .sitemap-list {
+    display: grid;
+    gap: 0.45rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sitemap-list a {
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: color 150ms ease, border-color 150ms ease;
+  }
+
+  .sitemap-list a:hover {
+    color: var(--ink);
+    border-color: var(--line-strong);
+  }
+
+  .sitemap-empty {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.55;
+  }
+
+  code {
+    font-family: var(--font-jetbrains), ui-monospace, monospace;
+    font-size: 0.85em;
+    background: var(--paper-deep);
+    padding: 0.1rem 0.35rem;
+    border-radius: var(--radius-sm);
+  }
+}

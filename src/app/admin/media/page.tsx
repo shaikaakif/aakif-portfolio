@@ -428,34 +428,6 @@ export default function MediaLibraryPage() {
                         {asset.is_published ? "Published" : "Draft"}
                       </AdminBadge>
                     </span>
-                    <div className="admin-gallery-card__overlay">
-                      <div className="admin-gallery-card__actions">
-                        <button
-                          type="button"
-                          className="admin-icon-button"
-                          onClick={() => setEditorId(asset.id)}
-                          aria-label={`Edit ${asset.title}`}
-                        >
-                          <EditIcon width={16} height={16} />
-                        </button>
-                        <button
-                          type="button"
-                          className="admin-icon-button"
-                          onClick={() => void copyUrl(asset)}
-                          aria-label={`Copy URL for ${asset.title}`}
-                        >
-                          <LinkIcon width={16} height={16} />
-                        </button>
-                        <button
-                          type="button"
-                          className="admin-icon-button is-danger"
-                          onClick={() => requestDelete(asset)}
-                          aria-label={`Delete ${asset.title}`}
-                        >
-                          <TrashIcon width={16} height={16} />
-                        </button>
-                      </div>
-                    </div>
                   </div>
                   <div className="admin-gallery-card__info">
                     <h3 className="admin-gallery-card__title">{asset.title}</h3>
@@ -467,6 +439,35 @@ export default function MediaLibraryPage() {
                           ? `Used in ${usage.length}`
                           : "Unused"}
                       </span>
+                    </div>
+                    <div className="admin-gallery-card__actions admin-gallery-card__actions--info">
+                      <button
+                        type="button"
+                        className="admin-icon-button admin-icon-button--surface"
+                        onClick={() => setEditorId(asset.id)}
+                        aria-label={`Edit ${asset.title}`}
+                        title="Edit metadata"
+                      >
+                        <EditIcon width={15} height={15} />
+                      </button>
+                      <button
+                        type="button"
+                        className="admin-icon-button admin-icon-button--surface"
+                        onClick={() => void copyUrl(asset)}
+                        aria-label={`Copy URL for ${asset.title}`}
+                        title="Copy image URL"
+                      >
+                        <LinkIcon width={15} height={15} />
+                      </button>
+                      <button
+                        type="button"
+                        className="admin-icon-button admin-icon-button--surface is-danger"
+                        onClick={() => requestDelete(asset)}
+                        aria-label={`Delete ${asset.title}`}
+                        title="Delete"
+                      >
+                        <TrashIcon width={15} height={15} />
+                      </button>
                     </div>
                   </div>
                 </article>

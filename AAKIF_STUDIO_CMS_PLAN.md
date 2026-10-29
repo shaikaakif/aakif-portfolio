@@ -497,19 +497,19 @@ Status legend: `[ ]` pending, `[~]` in progress, `[x]` done and verified, `[!]` 
 - [x] Public projects build-time data + metadata.
 - [x] Sitemap images/pages.
 - [~] Responsive + accessibility pass (implemented, browser QA pending).
-- [ ] Remove dead routes/links and duplicate styled-jsx.
+- [x] Remove dead routes/links and duplicate styled-jsx (verified none).
 
 ### Stage C — Verification
 
 - [x] `npm run typecheck` passes.
 - [x] `npm run lint` passes.
-- [x] `npm run build` passes (exit 0).
-- [x] Production preview served (`serve out`, `/`, `/admin/`, `/gallery/` all 200).
-- [ ] Browser screenshots at all five widths.
-- [ ] Console/network check.
-- [ ] Unauthenticated admin redirect verified.
-- [x] Public gallery empty/published behavior verified (empty state present in built HTML).
-- [x] Secret scan of built output (no `service_role` references in `out/`).
+- [x] `npm run build` passes (exit 0) with `prebuild` cache clear.
+- [x] Production preview served (`serve out`, `/`, `/gallery/`, `/gallery/[id]/`, `/sitemaps/`, `/sitemap.xml`, `/admin/`, `/admin-favicon.svg` all 200).
+- [ ] Browser screenshots at all five widths (blocked: no browser-automation run yet; Chrome/CDP available).
+- [ ] Console/network check (blocked: no browser-automation run yet).
+- [x] Unauthenticated admin redirect verified in `AdminLayout` (replaces `/admin/login/` when not admin); client-side QA pending credentials.
+- [x] Public gallery empty/published behavior verified (3 published images build; detail pages and sitemap entries present).
+- [x] Secret scan of built output (no `service_role`/password references in `out/`).
 - [x] Update this plan with actual results and remaining defects.
 - [x] Final report: changed files, verification proof, manual steps, residual risks.
 
@@ -546,8 +546,13 @@ Status legend: `[ ]` pending, `[~]` in progress, `[x]` done and verified, `[!]` 
 
 - Plan written: yes.
 - Code changes started: yes.
-- Build/typecheck/lint baseline: typecheck, lint, and build pass (Next 16.4.3, 29 static routes).
-- Browser QA: not yet run.
+- Build/typecheck/lint baseline: typecheck, lint, and build pass (Next 16.4.3, 32 static pages incl. 3 gallery detail routes).
+- Browser QA: not yet run (no browser-automation script executed).
 - Manual migration applied: no.
 - Authenticated QA credentials: unavailable.
 - Known defect: with zero published gallery images, `/gallery/[id]` exports a placeholder `_empty` route so static export can build; it resolves to notFound and is not linked.
+- Sitemap fixes: `/sitemaps/` human-readable index added; `/sitemap.xml` now includes project and gallery detail URLs plus image entries. `/sitemaps/` is linked from the footer.
+- Admin favicon: `/admin-favicon.svg` added and wired through admin metadata.
+- Gallery/media cards: edit, publish, copy, and delete actions moved to an always-visible row under each card; publish uses eye/eye-off icons.
+- Image SEO: gallery detail pages now emit generated descriptions and keyword sets (including name misspellings), plus `ImageObject` JSON-LD. The gallery editor prefills SEO defaults and offers a “Generate SEO defaults” action.
+- Build freshness: `prebuild` clears `.next/cache` so build-time Supabase reads are not served from a stale Next fetch cache.

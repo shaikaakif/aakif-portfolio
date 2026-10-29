@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "@/components/ui/icons";
 import { getPublishedGalleryImages } from "@/lib/content/cms";
+import { buildGalleryImageSeo } from "@/lib/seo/gallery";
 import { seo } from "@/content/seo";
 
 interface GalleryImagePageProps {
@@ -45,17 +46,18 @@ export async function generateMetadata({
     };
   }
 
-  const description = image.caption ?? image.description ?? image.alt_text;
+  const imageSeo = buildGalleryImageSeo(image);
 
   return {
     title: image.title,
-    description,
+    description: imageSeo.description,
+    keywords: imageSeo.keywords,
     alternates: {
       canonical: `/gallery/${image.id}/`,
     },
     openGraph: {
       title: `${image.title} | ${seo.title.split(" — ")[0]}`,
-      description,
+      description: imageSeo.description,
       url: `/gallery/${image.id}/`,
       type: "article",
       images: image.public_url
@@ -72,7 +74,7 @@ export async function generateMetadata({
     twitter: {
       card: "summary_large_image",
       title: image.title,
-      description,
+      description: imageSeo.description,
       images: image.public_url ? [image.public_url] : [seo.ogImage],
     },
   };
@@ -89,13 +91,14 @@ export default async function GalleryImagePage({
 
   const taken = formatDate(image.taken_at);
   const uploaded = formatDate(image.created_at);
+  const imageSeo = buildGalleryImageSeo(image);
 
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "ImageObject",
     contentUrl: image.public_url,
     name: image.title,
-    description: image.caption ?? image.description ?? image.alt_text,
+    description: imageSeo.description,
     width: image.width ?? undefined,
     height: image.height ?? undefined,
     datePublished: image.created_at,
@@ -106,7 +109,7 @@ export default async function GalleryImagePage({
     },
     creditText: image.copyright_holder ?? undefined,
     license: image.license ?? undefined,
-    keywords: [...image.categories, ...image.tags].join(", "),
+    keywords: imageSeo.keywords.join(", "),
     isPartOf: {
       "@type": "ImageGallery",
       name: "Shaik Aakif — Gallery",

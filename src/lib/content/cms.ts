@@ -89,8 +89,7 @@ function toProject(row: ProjectRow): Project {
   };
 }
 
-export const getPublishedGalleryImages = cache(
-  async (): Promise<GalleryImage[]> => {
+export const getPublishedGalleryImages = async (): Promise<GalleryImage[]> => {
     const supabase = createSupabaseStaticClient();
     if (!supabase) return [];
 
@@ -112,8 +111,7 @@ export const getPublishedGalleryImages = cache(
     } catch {
       return [];
     }
-  }
-);
+};
 
 export const getPublishedGalleryCollections = cache(
   async (): Promise<GalleryCollection[]> => {

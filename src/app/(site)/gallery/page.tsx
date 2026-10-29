@@ -5,6 +5,11 @@ import {
   getPublishedGalleryCollections,
   getPublishedGalleryImages,
 } from "@/lib/content/cms";
+import {
+  buildGalleryImageDescription,
+  buildGalleryImageKeywords,
+  buildGalleryPageKeywords,
+} from "@/lib/seo/gallery";
 
 const description =
   "Personal photography, event photos, project screenshots, and behind-the-scenes work.";
@@ -16,6 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Gallery",
     description,
+    keywords: buildGalleryPageKeywords(images),
     alternates: {
       canonical: "/gallery/",
     },
@@ -65,7 +71,8 @@ export default async function GalleryPage() {
       "@type": "ImageObject",
       contentUrl: image.public_url,
       name: image.title,
-      description: image.caption ?? image.description ?? image.alt_text,
+      description: buildGalleryImageDescription(image),
+      keywords: buildGalleryImageKeywords(image).join(", "),
       width: image.width ?? undefined,
       height: image.height ?? undefined,
       datePublished: image.created_at,

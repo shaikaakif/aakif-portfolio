@@ -29,10 +29,6 @@ export const metadata: Metadata = {
     default: "Shaik Aakif — AI Builder & Product Developer",
     template: "%s | Shaik Aakif",
   },
-  robots: {
-    index: false,
-    follow: false,
-  },
 };
 
 export const viewport: Viewport = {

@@ -16,6 +16,10 @@ export const metadata: Metadata = {
     follow: false,
     nocache: true,
   },
+  icons: {
+    icon: [{ url: "/admin-favicon.svg", type: "image/svg+xml" }],
+    shortcut: [{ url: "/admin-favicon.svg", type: "image/svg+xml" }],
+  },
 };
 
 export default function AdminLayoutWrapper({

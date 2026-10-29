@@ -53,6 +53,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .map((image) => image.public_url)
         .filter((url): url is string => Boolean(url)),
     },
+    {
+      url: `${seo.baseUrl}/sitemaps/`,
+      changeFrequency: "monthly",
+      priority: 0.3,
+    },
     ...projectRoutes,
     ...galleryRoutes,
   ];

@@ -12,6 +12,7 @@ export function SiteFooter() {
           <Link prefetch={false} href="/work/">Work</Link>
           <Link prefetch={false} href="/gallery/">Gallery</Link>
           <Link prefetch={false} href="/about/">About</Link>
+          <Link prefetch={false} href="/sitemaps/">Sitemap</Link>
           <Link prefetch={false} href="/#contact">Contact</Link>
           <a href={profile.github} target="_blank" rel="noreferrer">
             GitHub

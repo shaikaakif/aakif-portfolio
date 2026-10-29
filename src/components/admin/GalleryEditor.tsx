@@ -4,6 +4,7 @@ import { useState } from "react";
 import { SideDrawer } from "@/components/admin/ui/SideDrawer";
 import { AdminAlert, AdminField } from "@/components/admin/ui/AdminUi";
 import { formatBytes, formatDate, parseCommaList } from "@/lib/admin/format";
+import { buildGalleryImageSeo } from "@/lib/seo/gallery";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type {
   GalleryCollection,
@@ -38,13 +39,18 @@ interface Draft {
 }
 
 function toDraft(image: GalleryImage): Draft {
+  const suggested = buildGalleryImageSeo(image);
+
   return {
     title: image.title,
     alt_text: image.alt_text,
     caption: image.caption ?? "",
-    description: image.description ?? "",
+    description: image.description ?? suggested.description,
     categories: image.categories.join(", "),
-    tags: image.tags.join(", "),
+    tags:
+      image.tags.length > 0
+        ? image.tags.join(", ")
+        : suggested.tags.join(", "),
     collection_id: image.collection_id ?? "",
     sort_order: image.sort_order ?? 0,
     is_published: image.is_published,
@@ -84,6 +90,10 @@ export function GalleryEditor({
       return;
     }
 
+    const suggested = buildGalleryImageSeo(image);
+    const description = draft.description.trim() || suggested.description;
+    const tags = parseCommaList(draft.tags);
+
     setSaving(true);
     const supabase = createSupabaseBrowserClient();
     const { error: updateError } = await supabase
@@ -92,9 +102,9 @@ export function GalleryEditor({
         title: draft.title.trim(),
         alt_text: draft.alt_text.trim(),
         caption: draft.caption.trim() || null,
-        description: draft.description.trim() || null,
+        description,
         categories: parseCommaList(draft.categories),
-        tags: parseCommaList(draft.tags),
+        tags: tags.length > 0 ? tags : suggested.tags,
         collection_id: draft.collection_id || null,
         sort_order: Number(draft.sort_order) || 0,
         is_published: draft.is_published,
@@ -180,6 +190,27 @@ export function GalleryEditor({
       ) : null}
 
       {error ? <AdminAlert tone="error">{error}</AdminAlert> : null}
+
+      <button
+        type="button"
+        className="admin-button admin-button--ghost admin-button--small"
+        style={{ marginBottom: "0.9rem" }}
+        onClick={() => {
+          const suggested = buildGalleryImageSeo({
+            ...image,
+            title: draft.title.trim() || image.title,
+            caption: draft.caption.trim() || null,
+            description: draft.description.trim() || null,
+          });
+          setDraft((current) => ({
+            ...current,
+            description: suggested.description,
+            tags: suggested.tags.join(", "),
+          }));
+        }}
+      >
+        Generate SEO defaults
+      </button>
 
       <form id="gallery-editor-form" onSubmit={handleSave}>
         <div className="admin-form-grid">
